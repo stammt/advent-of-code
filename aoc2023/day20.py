@@ -65,23 +65,14 @@ def part1(lines):
     highPulseCount = 0
     buttonPushes = 0
     buttonPushesUntilInitialState = -1
-    singleLowPulseSentToRx = False
 
     # keep going until we get back to the initial state
-    while not singleLowPulseSentToRx:
-        # if buttonPushes > 0 and areModulesInInitialState(modules):
-        #     buttonPushesUntilInitialState = buttonPushes
-        #     break
-        if singleLowPulseSentToRx:
-            print(f'low pulse sent to rx in {buttonPushes}')
+    while buttonPushes < 1000:
+        if buttonPushes > 0 and areModulesInInitialState(modules):
+            buttonPushesUntilInitialState = buttonPushes
             break
 
         buttonPushes += 1
-
-        if buttonPushes % 100000 == 0:
-            print(f'Round {buttonPushes}')
-        if areModulesInInitialState(modules):
-            print(f'Back to initial state')
 
         q = [{'high': False, 'source': 'button', 'destination': 'broadcaster'}]
         lowPulsesSentToRx = 0
@@ -92,7 +83,7 @@ def part1(lines):
             if pulse['destination'] == 'rx' and not pulse['high']:
                 lowPulseSentToRx += 1
 
-            # print(f'{pulse['source']} -{'high' if pulse['high'] else 'low'}-> {pulse['destination']}')
+            print(f'{pulse['source']} -{'high' if pulse['high'] else 'low'}-> {pulse['destination']}')
 
             if (pulse['high']):
                 highPulseCount += 1
@@ -126,18 +117,13 @@ def part1(lines):
                     p['source'] = pulse['destination']
                     q.append(p)
 
-        if lowPulsesSentToRx > 0:
-            print(f'low pulses sent to rx this round: {lowPulsesSentToRx}')
-        if lowPulsesSentToRx == 1:
-            singleLowPulseSentToRx = True
-
-    # if (buttonPushesUntilInitialState > 0):
-    #     print(f'Reached initial state after {buttonPushesUntilInitialState}')
-    #     print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
-    #     m = 1000 / buttonPushesUntilInitialState
-    #     print(f'Total: {(m * lowPulseCount) * (m * highPulseCount)} (m={m})')
-    # else:
-    #     print(f'Never got back to initial state after {buttonPushes}')
-    #     print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
+    if (buttonPushesUntilInitialState > 0):
+        print(f'Reached initial state after {buttonPushesUntilInitialState}')
+        print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
+        m = 1000 / buttonPushesUntilInitialState
+        print(f'Total: {(m * lowPulseCount) * (m * highPulseCount)} (m={m})')
+    else:
+        print(f'Never got back to initial state after {buttonPushes}')
+        print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
 
 part1(lines)
