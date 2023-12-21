@@ -75,13 +75,9 @@ def part1(lines):
         buttonPushes += 1
 
         q = [{'high': False, 'source': 'button', 'destination': 'broadcaster'}]
-        lowPulsesSentToRx = 0
         while len(q) > 0:
             pulse = q[0]
             del q[0]
-
-            if pulse['destination'] == 'rx' and not pulse['high']:
-                lowPulseSentToRx += 1
 
             print(f'{pulse['source']} -{'high' if pulse['high'] else 'low'}-> {pulse['destination']}')
 
@@ -126,4 +122,9 @@ def part1(lines):
         print(f'Never got back to initial state after {buttonPushes}')
         print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
 
-part1(lines)
+def part2(lines):
+    # Starting with the rx module, work backwards to find the sequence of
+    # pulses that would have sent it a single low pulse.
+    print('huh')
+
+part2(lines)
