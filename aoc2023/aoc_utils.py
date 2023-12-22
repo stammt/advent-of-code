@@ -18,8 +18,8 @@ class PuzzleInput:
         return self.getTestInput() if test == True else self.getFileInput()
     
 # Parse a string of space separated ints into a list of ints
-def splitInts(line) -> list[int]:
-    return list(map(lambda c: int(c), line.strip().split()))
+def splitInts(line, separator=' ') -> list[int]:
+    return list(map(lambda c: int(c), line.strip().split(separator)))
 
 class Direction(Enum):
     NORTH = 1,
