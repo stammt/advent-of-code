@@ -22,12 +22,16 @@ class Brick:
         self.end = end
         self.name = name
 
-    def fall(self):
-        self.start[2] -=1
-        self.end[2] -=1
+    def fallBy(self, dz):
+        self.start[2] -= dz
+        self.end[2] -= dz
 
     def getBottomPoints(self) -> list[(int, int)]:
         points = []
+        if (self.start[0] > self.end[0]):
+            print(f'x is backwards! {self}')
+        if (self.start[1] > self.end[1]):
+            print(f'y is backwards! {self}')
         for x in range(self.start[0], self.end[0] + 1):
             for y in range(self.start[1], self.end[1] + 1):
                 points.append((x, y))
@@ -61,21 +65,6 @@ def parseBricks(lines) -> list[Brick]:
         name = chr(ord(name) + 1)
     return bricks
     
-
-def getHighestZAtPoint(x, y, landed) -> ((int, int), [Brick]):
-    highest = 0
-    highestBricks = []
-    for b in landed:
-        bz = b.getZAtPoint(x, y)
-        if bz != None:
-            if bz == highest:
-                highestBricks.append(b)
-            elif bz > highest:
-                highest = bz
-                highestBricks = [b]
-    # print(f'Highest z at {x},{y} is {highest} : {bricksToString( highestBricks)}')
-    return (highest, highestBricks)
-
 def bricksToString(bricks):
     s = []
     for b in bricks:
@@ -93,50 +82,52 @@ def part1(lines):
 
     # map of brick -> [supporting bricks]
     supporting = {}
-    while len(fallingBricks) > 0:
-        # sort the falling bricks by their z index so we land the lowest
-        # bricks first
-        fallingBricks = sorted(fallingBricks, key=lambda b: max(b.start[2], b.end[2]))
 
-        # find any bricks that should stop falling - either by landing on the
-        # ground (z=0) or on top of another brick that has stopped falling. 
-        for b in fallingBricks:
-            # find the highest point of landed bricks for any part of
-            # this brick. The bricks containing those points are supporting
-            # this one when it lands.
-            pointsToCheck = b.getBottomPoints()
-            highest = 0
-            highestBricks = []
-            # print(f'Checking brick {b} : {pointsToCheck}')
-            for p in pointsToCheck:
-                pz, hb = getHighestZAtPoint(p[0], p[1], landed)
-                if pz != None:
-                    if (pz == highest):
-                        highestBricks += hb
-                    elif pz > highest:
-                        highest = pz
-                        highestBricks = hb
+    # sort the falling bricks by their z index so we land the lowest
+    # bricks first
+    fallingBricks = sorted(fallingBricks, key=lambda b: min(b.start[2], b.end[2]))
 
-            if b.getLowestZ() == (highest + 1):
-                # the brick will land this round
-                # print(f'Landed {b} supported by {bricksToString(highestBricks)}')
-                landed.append(b)
-                if len(highestBricks) > 0:
-                    supporting[b] = highestBricks
+    highestZAtPoint = {}
+    highestBrickAtPoint = {}
+    for brick in fallingBricks:
+        # find the highest point of landed bricks for any part of
+        # this brick. The bricks containing those points are supporting
+        # this one when it lands.
+        pointsToCheck = brick.getBottomPoints()
+        highest = 0
+        highestBricks = set()
+        # print(f'Checking brick {b} : {pointsToCheck}')
+        for p in pointsToCheck:
+            pz = highestZAtPoint[p] if p in highestZAtPoint else 0
+            if pz == highest:
+                if pz > 0:
+                    highestBricks.add(highestBrickAtPoint[p])
+            elif pz > highest:
+                highest = pz
+                highestBricks = set()
+                if pz > 0:
+                    highestBricks.add(highestBrickAtPoint[p])
 
-        for b in landed:
-            if b in fallingBricks:
-                fallingBricks.remove(b)
+        # drop this brick by enough that it's lowest point will be
+        # one higher than the highest point.
+        dz = brick.getLowestZ() - (highest + 1)
+        # print(f'falling {brick} by {dz} - checked {pointsToCheck} and got {highest}')
+        brick.fallBy(dz)
+        landed.append(brick)
 
-        # decrement z on all of the remaining falling bricks
-        print(f'Falling {len(fallingBricks)}')
-        for b in fallingBricks:
-            b.fall()
+        if len(highestBricks) > 0:
+            supporting[brick] = highestBricks
+
+        # update the highest points with this brick
+        z = brick.getHighestZ()
+        for p in pointsToCheck:
+            highestZAtPoint[p] = z
+            highestBrickAtPoint[p] = brick
 
     safe = 0
-    for b in bricks:
+    for b in landed:
         # Find bricks that only this brick supports
-        s = list(filter(lambda x: b in supporting[x] and len(supporting[x]) == 1, supporting))
+        s = list(filter(lambda x: (b in supporting[x] and len(supporting[x])) == 1, supporting))
         if len(s) == 0:
             safe += 1
 
