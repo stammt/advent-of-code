@@ -4,6 +4,7 @@ import math
 import re
 import itertools
 import sys
+from collections import Counter
 
 testInput = r"""1,0,1~1,2,1
 0,0,2~2,0,2
@@ -71,6 +72,20 @@ def bricksToString(bricks):
         s.append(str(b))
     return ''.join(s)
 
+def howManyWouldFall(bricks, supporting):
+    # Find bricks that only these bricks support
+    s = set(filter(lambda x: (bricks == supporting[x]), supporting))
+    fallingCount = len(s)
+
+    # Recursively see which bricks are only supported by any combination of the ones that fell next
+    if len(s) > 0:
+        for l in range(len(s) + 1):
+            for subset in itertools.combinations(s, l):
+                fallingCount += howManyWouldFall(set(subset), supporting)
+        # fallingCount += howManyWouldFall(s, supporting)
+
+    return fallingCount
+
 def part1(lines):
     bricks = parseBricks(lines)
 
@@ -124,13 +139,35 @@ def part1(lines):
             highestZAtPoint[p] = z
             highestBrickAtPoint[p] = brick
 
+    ## Part 1
+    # safe = 0
+    # for b in landed:
+    #     # Find bricks that only this brick supports
+    #     s = list(filter(lambda x: (b in supporting[x] and len(supporting[x])) == 1, supporting))
+    #     if len(s) == 0:
+    #         safe += 1
+
+    # print(f'Safe to disintigrate {safe} bricks')
+
+    ## Part 2
+    total = 0
     safe = 0
     for b in landed:
-        # Find bricks that only this brick supports
-        s = list(filter(lambda x: (b in supporting[x] and len(supporting[x])) == 1, supporting))
-        if len(s) == 0:
+        sb = set()
+        sb.add(b)
+        fallingCount = howManyWouldFall(sb, supporting)
+        print(f'{fallingCount} would fall for {b}')
+        if fallingCount == 0:
             safe += 1
+        else:
+            total += fallingCount
 
-    print(f'Safe to disintigrate {safe} bricks')
+    print(f'{safe} safe to remove')
+    
+    print(f'{total} would fall')
+    #2086 too low
+    #11351 too low
+
+
 
 part1(lines)
