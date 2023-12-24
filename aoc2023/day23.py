@@ -33,6 +33,7 @@ input = aoc_utils.PuzzleInput('input/input-day23.txt', testInput)
 
 lines = input.getInputLines(test=False)
 
+
 def getNextSteps(pos, visited, lines):
     steps = []
     if (pos[0] > 0):
@@ -57,6 +58,30 @@ def getNextSteps(pos, visited, lines):
             steps.append(candidate)
     return steps
 
+def getNextStepsPart2(pos, visited, lines):
+    steps = []
+    if (pos[0] > 0):
+        candidate = (pos[0] - 1, pos[1])
+        val = lines[candidate[1]][candidate[0]]
+        if candidate not in visited and val != '#':
+            steps.append(candidate)
+    if (pos[0] < len(lines[0]) - 1):
+        candidate = (pos[0] + 1, pos[1])
+        val = lines[candidate[1]][candidate[0]]
+        if candidate not in visited and val != '#':
+            steps.append(candidate)
+    if (pos[1] > 0):
+        candidate = (pos[0], pos[1] - 1)
+        val = lines[candidate[1]][candidate[0]]
+        if candidate not in visited and val != '#':
+            steps.append(candidate)
+    if (pos[1] < len(lines) - 1):
+        candidate = (pos[0], pos[1] + 1)
+        val = lines[candidate[1]][candidate[0]]
+        if candidate not in visited and val != '#':
+            steps.append(candidate)
+    return steps
+
 class HikingPath:
     def __init__(self, start, path=[]):
         self.currentStep = start
@@ -73,15 +98,17 @@ def allPathsDfs(start, finish, lines):
         del q[0]
 
         if p.currentStep == finish:
+            print(f'Found path of length {len(p.path)}')
             paths.append(p.path)
         else:
-            nextSteps = getNextSteps(p.currentStep, p.path, lines)
+            nextSteps = getNextStepsPart2(p.currentStep, set(p.path), lines)
             # Add this start node to a copy of visited, so it can be
             # visited on other traversals that may cross this one
             for step in nextSteps:
                 q.append(HikingPath(step, p.path + [step]))
 
     return paths
+
 
 def printPath(path, lines):
     for y in range(len(lines)):
@@ -108,7 +135,7 @@ def part1(lines):
         if len(p) > len(longestPath):
             longestPath = p
 
-    print(f'LongestPath: {len(longestPath)}')
     # printPath(longestPath, lines)
+    print(f'LongestPath: {len(longestPath)}')
 
 part1(lines)
