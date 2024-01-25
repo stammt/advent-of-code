@@ -5,7 +5,7 @@
 #"""
 #xlines = input.splitlines()
 
-f = open('input.txt', 'r')
+f = open('input/input-day1.txt', 'r')
 lines = f.readlines()
 
 # input = """two1nine
