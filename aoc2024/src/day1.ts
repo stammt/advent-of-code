@@ -1,8 +1,6 @@
-import {readFileSync} from 'fs';
+import {readInput} from './utils/file-utils';
 
-let data = readFileSync('input/day1.txt', 'utf-8')
-
-let lines = data.split('\n')
+let lines = readInput('day1')
 
 let first = lines.map(e => parseInt(e.split(/\s+/)[0]))
 let second = lines.map(e => parseInt(e.split(/\s+/)[1]))
