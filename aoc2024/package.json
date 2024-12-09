@@ -1,7 +1,13 @@
 {
   "devDependencies": {
+    "prettier": "3.4.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
-  "type":"module"
+  "scripts": {
+    "format": "prettier --write .",
+    "format:ci": "prettier --list-different .",
+    "lint": "tsc --noEmit && eslint ."
+  },
+  "type": "module"
 }
