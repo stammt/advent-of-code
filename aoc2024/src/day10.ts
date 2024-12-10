@@ -1,25 +1,20 @@
-import {
-  gridValue,
-  iterateNumberGrid,
-  numberGridValue,
-  toNumberGrid,
-} from "./utils/char-grid";
+import { Grid, toNumberGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
 
 const lines = readInput("day10", false);
 
 function countPathsToNineFromStep(
-  grid: number[][],
+  grid: Grid<number>,
   from: Point,
   dir: CardinalDirection,
   path: Point[],
   completePaths: Point[][]
 ) {
-  const fromValue = numberGridValue(from, grid)!;
+  const fromValue = grid.getValue(from)!;
   const nextNorth = from.step(dir);
   if (nextNorth && path.findIndex((e) => e.equals(nextNorth)) === -1) {
-    const nextNorthValue = numberGridValue(nextNorth, grid);
+    const nextNorthValue = grid.getValue(nextNorth);
     // visited.push(nextNorth);
     if (nextNorthValue === fromValue + 1) {
       if (nextNorthValue === 9) {
@@ -36,7 +31,7 @@ function countPathsToNineFromStep(
 }
 
 function countPathsToNine(
-  grid: number[][],
+  grid: Grid<number>,
   from: Point,
   path: Point[],
   completePaths: Point[][]
@@ -78,7 +73,7 @@ function part1() {
   const grid = toNumberGrid(lines);
   console.log(grid);
   let total = 0;
-  iterateNumberGrid(grid, (x, y, c) => {
+  grid.iterate((x, y, c) => {
     if (c === 0) {
       console.log(`starting at ${x}, ${y}`);
       const paths = new Array<Point[]>();
@@ -100,7 +95,7 @@ function part2() {
   const grid = toNumberGrid(lines);
   console.log(grid);
   let total = 0;
-  iterateNumberGrid(grid, (x, y, c) => {
+  grid.iterate((x, y, c) => {
     if (c === 0) {
       console.log(`starting at ${x}, ${y}`);
       const paths = new Array<Point[]>();
