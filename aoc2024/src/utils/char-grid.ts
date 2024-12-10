@@ -11,9 +11,42 @@ export function iterateGrid(
   }
 }
 
+export function iterateNumberGrid<T>(
+  grid: T[][],
+  cb: (x: number, y: number, s: T) => void
+): void {
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      cb(x, y, grid[y][x]);
+    }
+  }
+}
+
+export function toNumberGrid(grid: string[]): number[][] {
+  const result = new Array<number[]>(grid.length);
+
+  for (let y = 0; y < grid.length; y++) {
+    const line = new Array<number>(grid[y].length);
+    for (let x = 0; x < grid[y].length; x++) {
+      line[x] = parseInt(grid[y][x]);
+    }
+    result[y] = line;
+  }
+  return result;
+}
+
 // returns the char at the given point, or undefined if it is not in the grid
 export function gridValue(point: Point, grid: string[]): string | undefined {
   if (!isOnTheGrid(point, grid)) return undefined;
+
+  return grid[point.y][point.x];
+}
+
+export function numberGridValue(
+  point: Point,
+  grid: number[][]
+): number | undefined {
+  if (!isOnTheNumberGrid(point, grid)) return undefined;
 
   return grid[point.y][point.x];
 }
@@ -28,6 +61,14 @@ export function isOnTheGrid(point: Point, grid: string[]): boolean {
   );
 }
 
+export function isOnTheNumberGrid(point: Point, grid: number[][]): boolean {
+  return (
+    point.y >= 0 &&
+    point.y < grid.length &&
+    point.x >= 0 &&
+    point.x < grid[point.y].length
+  );
+}
 // finds the given sequence in the grid, returning all start positions and directions that are found
 export function findSequence(
   seq: string,

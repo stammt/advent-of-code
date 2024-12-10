@@ -1,12 +1,12 @@
 export enum CardinalDirection {
-  N = 0,
-  NE,
-  E,
-  SE,
-  S,
-  SW,
-  W,
-  NW,
+  N = "N",
+  NE = "NE",
+  E = "E",
+  SE = "SE",
+  S = "S",
+  SW = "SW",
+  W = "W",
+  NW = "NW",
 }
 export const CardinalDirections = [
   CardinalDirection.N,
