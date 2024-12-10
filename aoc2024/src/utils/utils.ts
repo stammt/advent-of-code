@@ -15,3 +15,14 @@ export function permutations(ops: string[], len: number): string[][] {
   }
   return result;
 }
+
+// generate a list of all pairs of values in the given array
+export function allPairs<T>(arr: T[]): { a: T; b: T }[] {
+  const result = new Array<{ a: T; b: T }>();
+  for (let i = 0; i < arr.length - 1; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      result.push({ a: arr[i], b: arr[j] });
+    }
+  }
+  return result;
+}
