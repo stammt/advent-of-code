@@ -42,17 +42,28 @@ export function iterateGrid(
   }
 }
 
-export function toNumberGrid(grid: string[]): Grid<number> {
-  const result = new Array<number[]>(grid.length);
+export function linesToGrid<T>(
+  lines: string[],
+  mapper: (value: string) => T
+): Grid<T> {
+  const result = new Array<T[]>(lines.length);
 
-  for (let y = 0; y < grid.length; y++) {
-    const line = new Array<number>(grid[y].length);
-    for (let x = 0; x < grid[y].length; x++) {
-      line[x] = parseInt(grid[y][x]);
+  for (let y = 0; y < lines.length; y++) {
+    const line = new Array<T>(lines[y].length);
+    for (let x = 0; x < lines[y].length; x++) {
+      line[x] = mapper(lines[y][x]);
     }
     result[y] = line;
   }
   return new Grid(result);
+}
+
+export function linesToNumberGrid(lines: string[]): Grid<number> {
+  return linesToGrid(lines, parseInt);
+}
+
+export function linesToCharGrid(lines: string[]): Grid<string> {
+  return linesToGrid(lines, (e) => e);
 }
 
 // returns the char at the given point, or undefined if it is not in the grid
