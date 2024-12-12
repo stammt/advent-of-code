@@ -31,6 +31,8 @@ function part1() {
   console.log(`Stone count: ${stones.length}`);
 }
 
+// DFS step through each entry in the list, caching the result of expanding an
+// entry for each number of steps.
 function blinkRecursive(
   value: bigint,
   steps: number,
