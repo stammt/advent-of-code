@@ -1,8 +1,8 @@
-import { Grid, linesToCharGrid, toNumberGrid } from "./utils/char-grid";
 import { readInput, splitOnEmptyLines } from "./utils/file-utils";
-import { CardinalDirection, Point } from "./utils/point";
+import { Point } from "./utils/point";
+import Matrix from "./utils/Matrix";
 
-const lines = readInput("day13", false);
+const lines = readInput("day13", true);
 
 function parseButton(button: string): Point {
   const steps = button.split(": ")[1];
@@ -14,10 +14,10 @@ function parseButton(button: string): Point {
 function parsePrize(button: string): Point {
   const steps = button.split(": ")[1];
   const [x, y] = steps.split(", ");
-  const dx = 10000000000000 + parseInt(x.split("=")[1]);
-  const dy = 10000000000000 + parseInt(y.split("=")[1]);
-  //   const dx = parseInt(x.split("=")[1]);
-  //   const dy = parseInt(y.split("=")[1]);
+  //   const dx = 10000000000000 + parseInt(x.split("=")[1]);
+  //   const dy = 10000000000000 + parseInt(y.split("=")[1]);
+  const dx = parseInt(x.split("=")[1]);
+  const dy = parseInt(y.split("=")[1]);
   return new Point(dx, dy);
 }
 
@@ -81,6 +81,14 @@ function part2() {
     // (a.x * na) + (b.x * nb) = prize.x
     // (a.y * na) + (b.y * nb) = prize.y
 
+    const ab = new Matrix(2, 2, [
+      [a.x, b.x],
+      [a.y, b.y],
+    ]);
+    const p = new Matrix(2, 1, [[prize.x], [prize.y]]);
+    const n = ab.inverse().multiply(p);
+    console.log(`from matrix: n ${n.values} --- ${ab.inverse()}`);
+
     // a.y * na = prize.y - (b.y*nb)
     // na = (prize.y - (b.y * nb)) / a.y
 
@@ -110,6 +118,7 @@ function part2() {
       }
     }
   });
+  // 108394825772874
   console.log(`total cost: ${totalCost}  winners`);
 }
 

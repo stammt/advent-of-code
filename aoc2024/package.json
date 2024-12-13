@@ -13,5 +13,9 @@
     "format:ci": "prettier --list-different .",
     "lint": "tsc --noEmit && eslint ."
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "ts-matrix": "^1.3.2",
+    "tsm": "^2.3.0"
+  }
 }
