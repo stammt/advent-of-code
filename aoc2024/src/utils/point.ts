@@ -60,12 +60,32 @@ export class Point {
     return new Point(nextX, nextY);
   }
 
+  stepBy(step: Point, wrap: boolean = false, gridSize?: Point): Point {
+    if (wrap) {
+      const x = wrapPoint(this.x + step.x, gridSize!.x);
+      const y = wrapPoint(this.y + step.y, gridSize!.y);
+      return new Point(x, y);
+    } else {
+      return new Point(this.x + step.x, this.y + step.y);
+    }
+  }
+
   toString(): string {
     return `${this.x},${this.y}`;
   }
 
   equals(other?: Point): boolean {
     return other != undefined && this.x === other.x && this.y === other.y;
+  }
+}
+
+export function wrapPoint(x: number, max: number): number {
+  if (x >= 0 && x < max) return x;
+
+  if (x < 0) {
+    return max + x;
+  } else {
+    return x % max;
   }
 }
 
