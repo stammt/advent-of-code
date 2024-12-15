@@ -1,4 +1,9 @@
-import { Point, CardinalDirection, CardinalDirections } from "./point.ts";
+import {
+  Point,
+  CardinalDirection,
+  CardinalDirections,
+  parsePoint,
+} from "./point.ts";
 
 export class Grid<T> {
   readonly grid: T[][];
@@ -28,6 +33,16 @@ export class Grid<T> {
     if (!this.isValid(point)) return undefined;
 
     return this.grid[point.y][point.x];
+  }
+
+  find(value: T): Point[] {
+    const results = new Array<Point>();
+    this.iterate((x, y, s) => {
+      if (s === value) {
+        results.push(new Point(x, y));
+      }
+    });
+    return results;
   }
 }
 
@@ -124,4 +139,43 @@ function followSequence(
     }
   }
   return results;
+}
+
+export function sparseGrid(
+  lines: string[],
+  ignore: string = "."
+): Map<string, string> {
+  const results = new Map<string, string>();
+  for (let y = 0; y < lines.length; y++) {
+    for (let x = 0; x < lines[y].length; x++) {
+      const v = lines[y][x];
+      if (v !== ignore) {
+        results.set(new Point(x, y).toString(), lines[y][x]);
+      }
+    }
+  }
+  return results;
+}
+
+export function printSparseGrid(grid: Map<string, string>) {
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  grid.forEach((v, k) => {
+    const p = parsePoint(k);
+    maxX = Math.max(p.x, maxX);
+    maxY = Math.max(p.y, maxY);
+  });
+
+  for (let y = 0; y <= maxY; y++) {
+    let line = "";
+    for (let x = 0; x <= maxX; x++) {
+      const p = new Point(x, y).toString();
+      if (grid.has(p)) {
+        line += `${grid.get(p)}`;
+      } else {
+        line += ".";
+      }
+    }
+    console.log(line);
+  }
 }
