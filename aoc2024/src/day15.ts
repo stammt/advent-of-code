@@ -6,6 +6,17 @@ import {
   sparseGrid,
   toNumberGrid,
 } from "./utils/char-grid";
+import {
+  color,
+  log,
+  red,
+  green,
+  cyan,
+  cyanBright,
+  greenBG,
+  gray,
+  redBright,
+} from "console-log-colors";
 import { getSection, readInput } from "./utils/file-utils";
 import { CardinalDirection, parsePoint, Point } from "./utils/point";
 
@@ -90,50 +101,64 @@ function part1() {
   console.log(`gps sum ${sum}`);
 }
 
-function isBox(p: Point, map: Map<string, string>): boolean {
-  return map.get(p.toString()) === "[" || map.get(p.toString()) === "]";
+function isBox(p: Point, map: Grid<string>): boolean {
+  return map.getValue(p) === "[" || map.getValue(p) === "]";
 }
 
-function getBoxesInRange(
-  y: number,
-  startx: number,
-  endx: number,
-  map: Map<string, string>
-): Point[][] {
-  const boxes = new Set<string>();
-  const results = new Array<Point[]>();
-  for (let x = startx; x <= endx; x++) {
-    const p = new Point(x, y);
-    if (!boxes.has(p.toString())) {
-      if (map.get(p.toString()) === "[") {
-        boxes.add(p.toString());
-        results.push([p, p.step(CardinalDirection.E)]);
-      } else if (map.get(p.toString()) === "]") {
-        const boxStart = p.step(CardinalDirection.W);
-        boxes.add(boxStart.toString());
-        results.push([boxStart, p]);
-      }
-    }
-  }
-  return results;
+function isWideBox(v: string): boolean {
+  return v === "[" || v === "]";
 }
 
-function isWallInRange(
-  y: number,
-  startx: number,
-  endx: number,
-  map: Map<string, string>
+function canMoveBox(
+  p: Point,
+  dir: CardinalDirection,
+  map: Grid<string>
 ): boolean {
-  for (let x = startx; x <= endx; x++) {
-    if (map.get(new Point(x, y).toString()) === "#") {
-      return true;
-    }
+  const other =
+    map.getValue(p) === "["
+      ? p.step(CardinalDirection.E)
+      : p.step(CardinalDirection.W);
+
+  const step = p.step(dir);
+  const otherStep = other.step(dir);
+
+  if (map.getValue(step) === "#" || map.getValue(otherStep) === "#")
+    return false;
+
+  if (isWideBox(map.getValue(step)!)) {
+    if (!canMoveBox(step, dir, map)) return false;
   }
-  return false;
+  if (isWideBox(map.getValue(otherStep)!)) {
+    if (!canMoveBox(otherStep, dir, map)) return false;
+  }
+
+  return true;
+}
+
+function moveBox(p: Point, dir: CardinalDirection, map: Grid<string>) {
+  const other =
+    map.getValue(p) === "["
+      ? p.step(CardinalDirection.E)
+      : p.step(CardinalDirection.W);
+
+  const step = p.step(dir);
+  const otherStep = other.step(dir);
+
+  if (isWideBox(map.getValue(step)!)) {
+    moveBox(step, dir, map);
+  }
+  if (isWideBox(map.getValue(otherStep)!)) {
+    moveBox(otherStep, dir, map);
+  }
+
+  map.setValue(step, map.getValue(p)!);
+  map.setValue(otherStep, map.getValue(other)!);
+  map.setValue(p, ".");
+  map.setValue(other, ".");
 }
 
 function moveRobotWide(
-  map: Map<string, string>,
+  map: Grid<string>,
   robot: Point,
   dir: CardinalDirection
 ): Point {
@@ -148,53 +173,32 @@ function moveRobotWide(
     }
 
     // If we're not up against a wall, move the robot and any boxes.
-    if (map.get(p.toString()) !== "#") {
+    if (map.getValue(p) !== "#") {
       for (let b = boxes.length - 1; b >= 0; b--) {
-        const c = map.get(boxes[b].toString());
-        map.delete(boxes[b].toString());
-        map.set(boxes[b].step(dir).toString(), c!);
+        const c = map.getValue(boxes[b]);
+        map.setValue(boxes[b], ".");
+        map.setValue(boxes[b].step(dir), c!);
       }
-      map.delete(robot.toString());
-      map.set(robotStep.toString(), "@");
+      map.setValue(robot, ".");
+      map.setValue(robotStep, "@");
       robot = robotStep;
     }
   } else {
-    // find all boxes, until we hit a wall or empty space. Each box is two points.
-    const boxes = new Array<Point[]>();
     const robotStep = robot.step(dir);
-    let p = robotStep;
-    // the start and end of the row of boxes being pushed, if any
-    let pushStart = p.x;
-    let pushEnd = p.x;
-    while (true) {
-      console.log(`checking push row ${p.y} from ${pushStart} to ${pushEnd}`);
-      if (isWallInRange(p.y, pushStart, pushEnd, map)) {
-        console.log(`hit the wall`);
-        break;
-      }
-      const boxesInRange = getBoxesInRange(p.y, pushStart, pushEnd, map);
-      if (boxesInRange.length > 0) {
-        boxes.push(...boxesInRange);
-        pushStart = boxesInRange[0][0].x;
-        pushEnd = boxesInRange[boxesInRange.length - 1][1].x;
-        console.log(`Will push boxes ${boxesInRange}`);
-        p = p.step(dir);
-      } else {
-        break;
-      }
-    }
 
-    // If we're not up against a wall, move the robot and any boxes.
-    if (!isWallInRange(p.y, pushStart, pushEnd, map)) {
-      for (let b = boxes.length - 1; b >= 0; b--) {
-        map.set(boxes[b][0].step(dir).toString(), "[");
-        map.set(boxes[b][1].step(dir).toString(), "]");
-        map.delete(boxes[b][0].toString());
-        map.delete(boxes[b][1].toString());
-      }
-      map.delete(robot.toString());
-      map.set(robotStep.toString(), "@");
+    const v = map.getValue(robotStep);
+    if (v === ".") {
+      map.setValue(robotStep, "@");
+      map.setValue(robot, ".");
       robot = robotStep;
+    } else if (v === "[" || v === "]") {
+      if (canMoveBox(robotStep, dir, map)) {
+        // move box and robot
+        moveBox(robotStep, dir, map);
+        map.setValue(robotStep, "@");
+        map.setValue(robot, ".");
+        robot = robotStep;
+      }
     }
   }
 
@@ -202,6 +206,12 @@ function moveRobotWide(
 }
 
 function part2() {
+  const styles = new Map([
+    ["[", greenBG],
+    ["]", greenBG],
+    ["@", redBright],
+    [".", gray],
+  ]);
   const wideMapLines = getSection(0, lines).map((e) => {
     let wide = "";
     for (let i = 0; i < e.length; i++) {
@@ -217,31 +227,24 @@ function part2() {
     }
     return wide;
   });
-  const map = sparseGrid(wideMapLines);
+  const map = linesToCharGrid(wideMapLines);
+
   const moves = getSection(1, lines)
     .map((e) => e.trim())
     .join();
 
   console.log("*** Map");
-  printSparseGrid(map);
-  console.log("\n\nMoves: ");
+  map.log(styles);
+  console.log("\n\nMoves:  ");
+  console.log(moves.length);
   console.log(moves);
 
-  let robot: Point;
-  map.forEach((v, k) => {
-    if (v === "@") {
-      robot = parsePoint(k);
-    }
-  });
-  if (!robot) {
-    console.log("Robot not found!");
-    return;
-  }
+  let robot = map.find("@")![0];
   console.log(`Robot starting at ${robot}`);
 
   for (let i = 0; i < moves.length; i++) {
     const move = moves[i];
-    console.log(`\n*** Moving ${move}`);
+    // console.log(`\n*** Moving ${move}`);
 
     if (move === "<") {
       robot = moveRobotWide(map, robot, CardinalDirection.W);
@@ -253,20 +256,17 @@ function part2() {
       robot = moveRobotWide(map, robot, CardinalDirection.S);
     }
 
-    printSparseGrid(map);
+    // map.log();
   }
 
   // printSparseGrid(map);
 
-  let sum = 0;
-  map.forEach((v, k) => {
-    if (v === "[") {
-      const p = parsePoint(k);
-      sum += 100 * p.y + p.x;
+  let sum = BigInt(0);
+  map.iterate((x, y, s) => {
+    if (s === "[") {
+      sum += BigInt(100 * y) + BigInt(x);
     }
   });
-
-  // 1540869 too low
 
   console.log(`gps sum ${sum}`);
 }

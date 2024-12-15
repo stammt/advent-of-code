@@ -35,6 +35,10 @@ export class Grid<T> {
     return this.grid[point.y][point.x];
   }
 
+  setValue(point: Point, value: T) {
+    this.grid[point.y][point.x] = value;
+  }
+
   find(value: T): Point[] {
     const results = new Array<Point>();
     this.iterate((x, y, s) => {
@@ -43,6 +47,30 @@ export class Grid<T> {
       }
     });
     return results;
+  }
+
+  toString(styles: Map<string, (s: string) => string> = new Map()): string {
+    // const red = "\x1b[31m";
+    // const reset = "\x1b[0m";
+    const result = new Array<string>();
+    for (let y = 0; y < this.grid.length; y++) {
+      let line = "";
+      for (let x = 0; x < this.grid[y].length; x++) {
+        const ch = `${this.grid[y][x]}`;
+        if (styles.has(ch)) {
+          const fn = styles.get(ch)!;
+          line += fn(ch);
+        } else {
+          line += ch;
+        }
+      }
+      result.push(line);
+    }
+    return result.join("\n");
+  }
+
+  log(styles: Map<string, (s: string) => string> = new Map()) {
+    console.log(`\n${this.toString(styles)}`);
   }
 }
 
