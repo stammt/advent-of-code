@@ -150,7 +150,7 @@ export function sparseGrid(
     for (let x = 0; x < lines[y].length; x++) {
       const v = lines[y][x];
       if (v !== ignore) {
-        results.set(new Point(x, y).toString(), lines[y][x]);
+        results.set(new Point(x, y).toString(), v);
       }
     }
   }
