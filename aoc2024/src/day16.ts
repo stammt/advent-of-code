@@ -7,6 +7,7 @@ import {
   parsePoint,
   Point,
 } from "./utils/point";
+import { Queue } from "./utils/queue";
 
 const lines = readInput("day16", false);
 
@@ -20,16 +21,18 @@ const END = "E";
 type Node = {
   p: Point;
   dir: CardinalDirection;
+  key: string;
 };
 
-function key(n: Node): string {
-  return `${n.p}:${n.dir}`;
+function key(p: Point, dir: CardinalDirection): string {
+  return `${p}:${dir}`;
 }
 function parseKey(key: string): Node {
   const [pString, dirString] = key.split(":");
   return {
     p: parsePoint(pString),
     dir: parseDirection(dirString)!,
+    key: key,
   };
 }
 
@@ -156,95 +159,86 @@ function solve(
   return undefined;
 }
 
-function validNextSteps(
-  n: Node,
-  maze: Grid<string>,
-  visited: Set<string>
-): Node[] {
-  const results = new Array<Node>();
-
-  function addIfNotVisited(next: Node) {
-    if (!visited.has(key(next))) {
-      results.push(next);
-    }
-  }
-
-  // All turns in the current position.
-  if (n.dir === CardinalDirection.N || n.dir === CardinalDirection.S) {
-    addIfNotVisited({ p: n.p, dir: CardinalDirection.E });
-    addIfNotVisited({ p: n.p, dir: CardinalDirection.W });
-  } else {
-    addIfNotVisited({ p: n.p, dir: CardinalDirection.N });
-    addIfNotVisited({ p: n.p, dir: CardinalDirection.S });
-  }
-
-  // The next node in the current direction.
-  const next: Node = { p: n.p.step(n.dir), dir: n.dir };
-  if (maze.getValue(next.p) !== WALL) {
-    addIfNotVisited(next);
-  }
-
-  console.log(`from ${key(n)} could go ${results.map((e) => key(e))}`);
-  return results;
-}
-
 type Path = {
-  nodes: Node[];
+  //   nodes: Node[];
+  lastNode: Node;
   score: number;
+  visited: Array<string>;
 };
 
-function findAllPaths(
-  pathSoFar: Path,
-  finish: Point,
-  maze: Grid<string>,
-  visited: string[]
-): Path[] {
+function findAllPaths(start: Node, finish: Point, maze: Grid<string>): Path[] {
+  let lowestScore = 107512; // we know this from part 1!
+
   const results = new Array<Path>();
-  const node = pathSoFar.nodes[pathSoFar.nodes.length - 1];
+  const q = new Queue<Path>();
+  q.prepend({ lastNode: start, score: 0, visited: [key(start.p, start.dir)] });
 
-  const nextSteps = new Array<Node>();
-  const dirs =
-    node.dir === CardinalDirection.N || node.dir === CardinalDirection.S
-      ? [node.dir, CardinalDirection.E, CardinalDirection.W]
-      : [node.dir, CardinalDirection.N, CardinalDirection.S];
-  dirs.forEach((dir) => {
-    const step = { p: node.p.step(dir), dir: dir };
-    if (maze.getValue(step.p) !== WALL && !visited.includes(key(step))) {
-      nextSteps.push(step);
+  let i = 0;
+  while (q.hasNext()) {
+    i++;
+    const pathSoFar = q.next();
+
+    if (i % 100000 === 0) {
+      console.log(`i is ${i} q size ${q.size}`);
     }
-  });
 
-  //   console.log(`from ${key(node)} could go ${nextSteps.map((e) => key(e))}`);
+    // const node = pathSoFar.nodes[pathSoFar.nodes.length - 1];
+    const node = pathSoFar.lastNode;
 
-  //   const nextSteps = validNextSteps(node, maze, visited);
+    const nextSteps = new Array<Node>();
+    const dirs =
+      node.dir === CardinalDirection.N || node.dir === CardinalDirection.S
+        ? [node.dir, CardinalDirection.E, CardinalDirection.W]
+        : [node.dir, CardinalDirection.N, CardinalDirection.S];
+    dirs.forEach((dir) => {
+      const stepPoint = node.p.step(dir);
+      const stepKey = key(stepPoint, dir);
+      const oppositeDir =
+        dir == CardinalDirection.N
+          ? CardinalDirection.S
+          : dir === CardinalDirection.S
+            ? CardinalDirection.N
+            : dir === CardinalDirection.E
+              ? CardinalDirection.W
+              : CardinalDirection.E;
+      const oppositeKey = key(stepPoint, oppositeDir);
+      if (
+        maze.getValue(stepPoint) !== WALL &&
+        !pathSoFar.visited.includes(stepKey) &&
+        !pathSoFar.visited.includes(oppositeKey)
+      ) {
+        const step = { p: stepPoint, dir: dir, key: stepKey };
+        nextSteps.push(step);
+      }
+    });
 
-  //   if (node.p.x === 3 && node.p.y === 7) {
-  //     console.log(
-  //       `at 3,7 ${node.dir} considering next steps ${nextSteps.map((e) => key(e))}`
-  //     );
-  //   }
-  for (let i = 0; i < nextSteps.length; i++) {
-    const score = 1 + (nextSteps[i].dir !== node.dir ? 1000 : 0);
-    const pathWithStep: Path = {
-      nodes: pathSoFar.nodes.concat(nextSteps[i]),
-      score: pathSoFar.score + score,
-    };
+    for (let ns = 0; ns < nextSteps.length; ns++) {
+      const score = 1 + (nextSteps[ns].dir !== node.dir ? 1000 : 0);
+      const pathWithStep: Path = {
+        // nodes: pathSoFar.nodes.concat(nextSteps[ns]),
+        lastNode: nextSteps[ns],
+        score: pathSoFar.score + score,
+        visited: pathSoFar.visited.concat([nextSteps[ns].key]),
+      };
 
-    if (nextSteps[i].p.equals(finish)) {
-      console.log(`Found the finish with score ${pathWithStep.score}`);
-      results.push(pathWithStep);
-    } else {
-      //   visited.add(key(nextSteps[i]));
-      const v = visited.concat([key(nextSteps[i])]);
-      const p = findAllPaths(pathWithStep, finish, maze, v);
-      results.push(...p);
+      if (nextSteps[ns].p.equals(finish)) {
+        console.log(`Found the finish with score ${pathWithStep.score}`);
+        results.push(pathWithStep);
+        lowestScore = Math.min(pathWithStep.score, lowestScore);
+      } else {
+        // Only keep processing this path if it might be tied for lowest score.
+        if (pathWithStep.score <= lowestScore) {
+          q.prepend(pathWithStep);
+          //   q.splice(i + 1, 0, pathWithStep);
+          // } else {
+          //   console.log(
+          //     `cutting off path with score at least ${pathWithStep.score} > ${lowestScore}`
+          //   );
+        }
+      }
     }
   }
   return results;
-}
-
-function allPaths(start: Node, finish: Point, maze: Grid<string>): Path[] {
-  return findAllPaths({ nodes: [start], score: 0 }, finish, maze, [key(start)]);
 }
 
 function pathOverlay(path: Path) {
@@ -306,7 +300,7 @@ function part2() {
   };
 
   // just need to find the lowest score
-  const paths = allPaths(startNode, finish, maze);
+  const paths = findAllPaths(startNode, finish, maze);
   console.log(`Found ${paths.length} paths`);
 
   let minScore = Infinity;
@@ -321,9 +315,13 @@ function part2() {
   const seats = new Set<string>();
   paths.forEach((path) => {
     if (path.score === minScore) {
-      path.nodes.forEach((node) => {
+      path.visited.forEach((nodeKey) => {
+        const node = parseKey(nodeKey);
         seats.add(node.p.toString());
       });
+      //   path.nodes.forEach((node) => {
+      //     seats.add(node.p.toString());
+      //   });
     }
   });
 

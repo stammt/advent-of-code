@@ -43,10 +43,12 @@ export function parseDirection(dir: string): CardinalDirection | null {
 export class Point {
   readonly x: number;
   readonly y: number;
+  private readonly s: string;
 
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
+    this.s = `${this.x},${this.y}`;
   }
 
   step(direction: CardinalDirection): Point {
@@ -92,7 +94,7 @@ export class Point {
   }
 
   toString(): string {
-    return `${this.x},${this.y}`;
+    return this.s;
   }
 
   equals(other?: Point): boolean {
