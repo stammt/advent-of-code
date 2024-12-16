@@ -18,6 +18,27 @@ export const CardinalDirections = [
   CardinalDirection.W,
   CardinalDirection.NW,
 ];
+export function parseDirection(dir: string): CardinalDirection | null {
+  switch (dir) {
+    case "N":
+      return CardinalDirection.N;
+    case "NE":
+      return CardinalDirection.NE;
+    case "E":
+      return CardinalDirection.E;
+    case "SE":
+      return CardinalDirection.SE;
+    case "S":
+      return CardinalDirection.S;
+    case "SW":
+      return CardinalDirection.SW;
+    case "W":
+      return CardinalDirection.W;
+    case "NW":
+      return CardinalDirection.NW;
+  }
+  return null;
+}
 
 export class Point {
   readonly x: number;

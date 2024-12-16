@@ -39,7 +39,11 @@ export class Grid<T> {
     this.grid[point.y][point.x] = value;
   }
 
-  find(value: T): Point[] {
+  find(value: T): Point {
+    return this.findAll(value)[0];
+  }
+
+  findAll(value: T): Point[] {
     const results = new Array<Point>();
     this.iterate((x, y, s) => {
       if (s === value) {
@@ -49,14 +53,19 @@ export class Grid<T> {
     return results;
   }
 
-  toString(styles: Map<string, (s: string) => string> = new Map()): string {
+  toString(
+    styles: Map<string, (s: string) => string> = new Map(),
+    overlay: Map<string, string> = new Map()
+  ): string {
     // const red = "\x1b[31m";
     // const reset = "\x1b[0m";
     const result = new Array<string>();
     for (let y = 0; y < this.grid.length; y++) {
       let line = "";
       for (let x = 0; x < this.grid[y].length; x++) {
-        const ch = `${this.grid[y][x]}`;
+        const ch = overlay.has(`${x},${y}`)
+          ? overlay.get(`${x},${y}`)!
+          : `${this.grid[y][x]}`;
         if (styles.has(ch)) {
           const fn = styles.get(ch)!;
           line += fn(ch);
@@ -69,8 +78,11 @@ export class Grid<T> {
     return result.join("\n");
   }
 
-  log(styles: Map<string, (s: string) => string> = new Map()) {
-    console.log(`\n${this.toString(styles)}`);
+  log(
+    styles: Map<string, (s: string) => string> = new Map(),
+    overlay: Map<string, string> = new Map()
+  ) {
+    console.log(`\n${this.toString(styles, overlay)}`);
   }
 }
 
