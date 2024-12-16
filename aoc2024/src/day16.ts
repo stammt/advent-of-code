@@ -9,7 +9,7 @@ import {
 } from "./utils/point";
 import { Queue } from "./utils/queue";
 
-const lines = readInput("day16", false);
+const lines = readInput("day16", true);
 
 const START = "S";
 const WALL = "#";
@@ -40,19 +40,17 @@ function neighborNodes(n: Node): Node[] {
   const results = new Array<Node>();
 
   // All turns in the current position.
-  [
-    CardinalDirection.N,
-    CardinalDirection.E,
-    CardinalDirection.S,
-    CardinalDirection.W,
-  ].forEach((dir) => {
-    if (dir !== n.dir) {
-      results.push({ p: n.p, dir: dir });
-    }
+  const dirs =
+    n.dir === CardinalDirection.N || n.dir === CardinalDirection.S
+      ? [CardinalDirection.E, CardinalDirection.W]
+      : [CardinalDirection.N, CardinalDirection.S];
+  dirs.forEach((dir) => {
+    // const s = n.p.step(dir);
+    results.push({ p: n.p, dir: dir, key: key(n.p, dir) });
   });
 
-  // The next node in the current direction.
-  results.push({ p: n.p.step(n.dir), dir: n.dir });
+  const s = n.p.step(n.dir);
+  results.push({ p: s, dir: n.dir, key: key(s, n.dir) });
 
   return results;
 }
@@ -84,45 +82,27 @@ function solve(
   start: Node,
   finish: Point,
   maze: Grid<string>
-): number | undefined {
+): { score: number; path: Array<Node> } | undefined {
   const dist = new Map<string, number>();
   const prev = new Map<string, string>();
   const q = new Set<string>();
 
+  // Add all non-wall nodes.
   maze.iterate((x, y, s) => {
     if (s !== WALL) {
       const point = new Point(x, y);
-      q.add(
-        key({
-          p: point,
-          dir: CardinalDirection.N,
-        })
-      );
-      q.add(
-        key({
-          p: point,
-          dir: CardinalDirection.S,
-        })
-      );
-      q.add(
-        key({
-          p: point,
-          dir: CardinalDirection.E,
-        })
-      );
-      q.add(
-        key({
-          p: point,
-          dir: CardinalDirection.W,
-        })
-      );
+      q.add(key(point, CardinalDirection.N));
+      q.add(key(point, CardinalDirection.S));
+      q.add(key(point, CardinalDirection.E));
+      q.add(key(point, CardinalDirection.W));
     }
   });
 
-  dist.set(key(start), 0);
+  dist.set(start.key, 0);
+  let finishNode: Node;
 
   while (q.size > 0) {
-    // find the node with min distance
+    // find the node in the q with min distance
     let uKey: string;
     let minDist = Infinity;
     dist.forEach((d, key) => {
@@ -139,15 +119,17 @@ function solve(
 
     if (u.p.equals(finish)) {
       // found the finish node
-      return minDist;
+      //   return minDist;
+      finishNode = u;
+      break;
     }
 
-    const neighbors = neighborNodes(u).filter((n) => q.has(key(n)));
+    const neighbors = neighborNodes(u).filter((n) => q.has(n.key));
     // console.log(
     //   `${uKey} has ${neighbors.length} neighbors: ${neighbors.map((e) => key(e))}`
     // );
     for (let i = 0; i < neighbors.length; i++) {
-      const nKey = key(neighbors[i]);
+      const nKey = neighbors[i].key;
       const alt = minDist + score(u, neighbors[i]);
       if (!dist.has(nKey) || alt < dist.get(nKey)!) {
         dist.set(nKey, alt);
@@ -156,95 +138,25 @@ function solve(
     }
   }
 
+  // build the path
+  if (finishNode) {
+    const path = new Array<Node>();
+    let k = finishNode.key;
+    path.push(finishNode);
+    while (prev.has(k)) {
+      k = prev.get(k);
+      path.push(parseKey(k!));
+    }
+    path.reverse();
+    return { score: dist.get(finishNode.key)!, path: path };
+  }
   return undefined;
 }
 
-type Path = {
-  //   nodes: Node[];
-  lastNode: Node;
-  score: number;
-  visited: Array<string>;
-};
-
-function findAllPaths(start: Node, finish: Point, maze: Grid<string>): Path[] {
-  let lowestScore = 107512; // we know this from part 1!
-
-  const results = new Array<Path>();
-  const q = new Queue<Path>();
-  q.prepend({ lastNode: start, score: 0, visited: [key(start.p, start.dir)] });
-
-  let i = 0;
-  while (q.hasNext()) {
-    i++;
-    const pathSoFar = q.next();
-
-    if (i % 100000 === 0) {
-      console.log(`i is ${i} q size ${q.size}`);
-    }
-
-    // const node = pathSoFar.nodes[pathSoFar.nodes.length - 1];
-    const node = pathSoFar.lastNode;
-
-    const nextSteps = new Array<Node>();
-    const dirs =
-      node.dir === CardinalDirection.N || node.dir === CardinalDirection.S
-        ? [node.dir, CardinalDirection.E, CardinalDirection.W]
-        : [node.dir, CardinalDirection.N, CardinalDirection.S];
-    dirs.forEach((dir) => {
-      const stepPoint = node.p.step(dir);
-      const stepKey = key(stepPoint, dir);
-      const oppositeDir =
-        dir == CardinalDirection.N
-          ? CardinalDirection.S
-          : dir === CardinalDirection.S
-            ? CardinalDirection.N
-            : dir === CardinalDirection.E
-              ? CardinalDirection.W
-              : CardinalDirection.E;
-      const oppositeKey = key(stepPoint, oppositeDir);
-      if (
-        maze.getValue(stepPoint) !== WALL &&
-        !pathSoFar.visited.includes(stepKey) &&
-        !pathSoFar.visited.includes(oppositeKey)
-      ) {
-        const step = { p: stepPoint, dir: dir, key: stepKey };
-        nextSteps.push(step);
-      }
-    });
-
-    for (let ns = 0; ns < nextSteps.length; ns++) {
-      const score = 1 + (nextSteps[ns].dir !== node.dir ? 1000 : 0);
-      const pathWithStep: Path = {
-        // nodes: pathSoFar.nodes.concat(nextSteps[ns]),
-        lastNode: nextSteps[ns],
-        score: pathSoFar.score + score,
-        visited: pathSoFar.visited.concat([nextSteps[ns].key]),
-      };
-
-      if (nextSteps[ns].p.equals(finish)) {
-        console.log(`Found the finish with score ${pathWithStep.score}`);
-        results.push(pathWithStep);
-        lowestScore = Math.min(pathWithStep.score, lowestScore);
-      } else {
-        // Only keep processing this path if it might be tied for lowest score.
-        if (pathWithStep.score <= lowestScore) {
-          q.prepend(pathWithStep);
-          //   q.splice(i + 1, 0, pathWithStep);
-          // } else {
-          //   console.log(
-          //     `cutting off path with score at least ${pathWithStep.score} > ${lowestScore}`
-          //   );
-        }
-      }
-    }
-  }
-  return results;
-}
-
-function pathOverlay(path: Path) {
+function pathOverlay(path: Array<Node>) {
   const overlay = new Map<string, string>();
-  for (let i = 0; i < path.nodes.length; i++) {
-    const n = path.nodes[i];
+  for (let i = 0; i < path.length; i++) {
+    const n = path[i];
     const key = n.p.toString();
     const ch =
       n.dir === CardinalDirection.N
@@ -279,12 +191,16 @@ function part1() {
   const startNode: Node = {
     p: start,
     dir: CardinalDirection.E,
+    key: key(start, CardinalDirection.E),
   };
 
   // just need to find the lowest score
-  const score = solve(startNode, finish, maze);
-
-  console.log(`lowest: ${score}`);
+  const solution = solve(startNode, finish, maze);
+  if (solution) {
+    const { score, path } = solution;
+    maze.log(styles, pathOverlay(path));
+    console.log(`lowest: ${score}`);
+  }
 }
 
 function part2() {
@@ -328,4 +244,4 @@ function part2() {
   console.log(`lowest: ${minScore}, with ${seats.size} seats`);
 }
 
-part2();
+part1();
