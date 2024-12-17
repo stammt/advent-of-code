@@ -1,15 +1,23 @@
-import { cyanBright, gray, greenBG, redBright } from "console-log-colors";
+import {
+  cyanBright,
+  gray,
+  greenBG,
+  redBright,
+  yellow,
+  yellowBG,
+} from "console-log-colors";
 import { Grid, linesToCharGrid, toNumberGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import {
   CardinalDirection,
+  oppositeDirection,
   parseDirection,
   parsePoint,
   Point,
 } from "./utils/point";
 import { Queue } from "./utils/queue";
 
-const lines = readInput("day16", true);
+const lines = readInput("day16", false);
 
 const START = "S";
 const WALL = "#";
@@ -56,33 +64,14 @@ function neighborNodes(n: Node): Node[] {
 }
 
 function score(current: Node, next: Node) {
-  let s = 0;
-  if (current.dir != next.dir) {
-    if (
-      current.dir === CardinalDirection.N ||
-      current.dir === CardinalDirection.S
-    ) {
-      s +=
-        next.dir === CardinalDirection.E || CardinalDirection.W ? 1000 : 2000;
-    } else if (
-      current.dir === CardinalDirection.E ||
-      current.dir === CardinalDirection.W
-    ) {
-      s +=
-        next.dir === CardinalDirection.N || CardinalDirection.S ? 1000 : 2000;
-    }
-  } else {
-    s = 1;
-  }
-
-  return s;
+  return current.dir === next.dir ? 1 : 1000;
 }
 
 function solve(
   start: Node,
-  finish: Point,
+  //   finish: Point,
   maze: Grid<string>
-): { score: number; path: Array<Node> } | undefined {
+): { distances: Map<string, number>; prev: Map<string, string> } {
   const dist = new Map<string, number>();
   const prev = new Map<string, string>();
   const q = new Set<string>();
@@ -117,12 +106,12 @@ function solve(
     q.delete(uKey!);
     const u = parseKey(uKey!);
 
-    if (u.p.equals(finish)) {
-      // found the finish node
-      //   return minDist;
-      finishNode = u;
-      break;
-    }
+    // if (u.p.equals(finish)) {
+    //   // found the finish node
+    //   //   return minDist;
+    //   finishNode = u;
+    //   break;
+    // }
 
     const neighbors = neighborNodes(u).filter((n) => q.has(n.key));
     // console.log(
@@ -138,19 +127,19 @@ function solve(
     }
   }
 
-  // build the path
-  if (finishNode) {
-    const path = new Array<Node>();
-    let k = finishNode.key;
-    path.push(finishNode);
-    while (prev.has(k)) {
-      k = prev.get(k);
-      path.push(parseKey(k!));
-    }
-    path.reverse();
-    return { score: dist.get(finishNode.key)!, path: path };
+  return { distances: dist, prev: prev };
+}
+
+function buildPath(finish: Node, prev: Map<string, string>): Array<Node> {
+  const path = new Array<Node>();
+  let k = finish.key;
+  path.push(finish);
+  while (prev.has(k)) {
+    k = prev.get(k);
+    path.push(parseKey(k!));
   }
-  return undefined;
+  path.reverse();
+  return path;
 }
 
 function pathOverlay(path: Array<Node>) {
@@ -171,6 +160,14 @@ function pathOverlay(path: Array<Node>) {
   return overlay;
 }
 
+function seatsOverlay(seats: Set<string>) {
+  const overlay = new Map<string, string>();
+  seats.forEach((seat) => {
+    overlay.set(seat, "O");
+  });
+  return overlay;
+}
+
 const styles = new Map([
   ["S", redBright],
   ["E", redBright],
@@ -178,8 +175,39 @@ const styles = new Map([
   ["v", cyanBright],
   [">", cyanBright],
   ["<", cyanBright],
+  ["O", yellowBG],
   [".", gray],
 ]);
+
+function findPathWithLowestScore(
+  start: Node,
+  finish: Point,
+  distances: Map<string, number>,
+  prev: Map<string, string>
+): { minScore: number; path: Array<Node> } {
+  // look at approaches to finish from different directions to find the
+  // one with the lowest score
+  let min = Infinity;
+  let minFinish: Node;
+  [
+    CardinalDirection.N,
+    CardinalDirection.S,
+    CardinalDirection.E,
+    CardinalDirection.W,
+  ].forEach((dir) => {
+    const finishNode: Node = { p: finish, dir: dir, key: key(finish, dir) };
+    const dist = distances.get(finishNode.key);
+    if (dist && dist < min) {
+      min = dist;
+      minFinish = finishNode;
+    }
+  });
+
+  const path = buildPath(minFinish!, prev);
+  // maze.log(styles, pathOverlay(path));
+  // console.log(`lowest: ${min}`);
+  return { minScore: min, path: path };
+}
 
 function part1() {
   const maze = linesToCharGrid(lines);
@@ -195,12 +223,19 @@ function part1() {
   };
 
   // just need to find the lowest score
-  const solution = solve(startNode, finish, maze);
-  if (solution) {
-    const { score, path } = solution;
-    maze.log(styles, pathOverlay(path));
-    console.log(`lowest: ${score}`);
-  }
+  const solution = solve(startNode, maze);
+  const { distances, prev } = solution;
+
+  // look at approaches to finish from different directions to find the
+  // one with the lowest score
+  const { minScore, path } = findPathWithLowestScore(
+    startNode,
+    finish,
+    distances,
+    prev
+  );
+  maze.log(styles, pathOverlay(path));
+  console.log(`lowest: ${minScore}`);
 }
 
 function part2() {
@@ -210,38 +245,136 @@ function part2() {
 
   maze.log(styles);
 
+  // build paths from start to finish
   const startNode: Node = {
     p: start,
     dir: CardinalDirection.E,
+    key: key(start, CardinalDirection.E),
   };
 
-  // just need to find the lowest score
-  const paths = findAllPaths(startNode, finish, maze);
-  console.log(`Found ${paths.length} paths`);
+  console.log("calculating distances from start");
+  const { distances: distancesFromStart, prev: prevFromStart } = solve(
+    startNode,
+    maze
+  );
 
-  let minScore = Infinity;
-  paths.forEach((path) => {
-    // console.log(`score ${path.score}:`);
-    // maze.log(styles, pathOverlay(path));
-    if (path.score < minScore) {
-      minScore = path.score;
-    }
+  // build paths from finish, with each direction, back to start
+  const allDistancesFromFinish = new Array<Map<string, number>>();
+  const allPrevsFromFinish = new Array<Map<string, string>>();
+  const allFinishNodes = new Array<Node>();
+  [
+    CardinalDirection.N,
+    CardinalDirection.S,
+    CardinalDirection.E,
+    CardinalDirection.W,
+  ].forEach((dir) => {
+    console.log(`calculating distances from finish ${dir}`);
+    const finishNode: Node = { p: finish, dir: dir, key: key(finish, dir) };
+    allFinishNodes.push(finishNode);
+    const { distances: distancesFromFinish, prev: prevFromFinish } = solve(
+      finishNode,
+      maze
+    );
+    allDistancesFromFinish.push(distancesFromFinish);
+    allPrevsFromFinish.push(prevFromFinish);
   });
+
+  // for every node not already covered, see if the sum of the shortest path
+  // from start to that node + the path from finish to that node is the same
+  // as the shortest distance from start to finish.
+  // look at approaches to finish from different directions to find the
+  // one with the lowest score
+  const { minScore, path: minScorePath } = findPathWithLowestScore(
+    startNode,
+    finish,
+    distancesFromStart,
+    prevFromStart
+  );
+
+  console.log(`min score is ${minScore}`);
 
   const seats = new Set<string>();
-  paths.forEach((path) => {
-    if (path.score === minScore) {
-      path.visited.forEach((nodeKey) => {
-        const node = parseKey(nodeKey);
-        seats.add(node.p.toString());
-      });
-      //   path.nodes.forEach((node) => {
-      //     seats.add(node.p.toString());
-      //   });
-    }
+  minScorePath.forEach((node) => {
+    seats.add(node.p.toString());
   });
 
-  console.log(`lowest: ${minScore}, with ${seats.size} seats`);
+  console.log(`checking all nodes`);
+  const checkpoint = new Point(11, 13);
+
+  for (let y = 0; y < maze.grid.length; y++) {
+    for (let x = 0; x < maze.grid[y].length; x++) {
+      const point = new Point(x, y);
+      if (seats.has(point.toString())) continue;
+
+      const value = maze.getValue(point);
+      if (value != WALL) {
+        if (point.equals(checkpoint)) {
+          console.log(`checking ${point}: ${value}`);
+        }
+        const { minScore: distFromStart, path: pathFromStart } =
+          findPathWithLowestScore(
+            startNode,
+            point,
+            distancesFromStart,
+            prevFromStart
+          );
+
+        // use the path to find the direction we are going when we
+        // get to the point, to make its Node
+        const pointNode = pathFromStart[pathFromStart.length - 1];
+        const remainingDistance = minScore - distFromStart;
+
+        if (point.equals(checkpoint)) {
+          console.log(
+            `${pointNode.key} is ${distFromStart} from start, ${remainingDistance} remaining`
+          );
+        }
+
+        // then see if there is a path from the finish to the node that
+        // covers the remaining distance.
+        for (let i = 0; i < allDistancesFromFinish.length; i++) {
+          const { minScore: distFromFinish, path: pathFromFinish } =
+            findPathWithLowestScore(
+              allFinishNodes[i],
+              point,
+              allDistancesFromFinish[i],
+              allPrevsFromFinish[i]
+            );
+          const pointNodeFromFinish = pathFromFinish[pathFromFinish.length - 1];
+          if (point.equals(checkpoint)) {
+            console.log(
+              `${point} is ${distFromFinish} from finish, with key ${pointNodeFromFinish.key}`
+            );
+          }
+
+          let adjust = 0;
+          if (pointNode.dir !== oppositeDirection(pointNodeFromFinish.dir)) {
+            adjust = 1000;
+            if (point.equals(checkpoint)) {
+              console.log(
+                `Adjusting +1000 for ${pointNode.dir} vs ${pointNodeFromFinish.dir}`
+              );
+            }
+          }
+
+          if (distFromFinish + adjust === remainingDistance) {
+            if (point.equals(checkpoint)) {
+              console.log(`adding seats from path `);
+            }
+            pathFromFinish.forEach((node) => {
+              seats.add(node.p.toString());
+            });
+            pathFromStart.forEach((node) => {
+              seats.add(node.p.toString());
+            });
+          }
+        }
+      }
+    }
+  }
+
+  maze.log(styles, seatsOverlay(seats));
+  console.log(`Found seats: ${seats.size}`);
 }
 
-part1();
+part2();

@@ -40,6 +40,27 @@ export function parseDirection(dir: string): CardinalDirection | null {
   return null;
 }
 
+export function oppositeDirection(dir: CardinalDirection): CardinalDirection {
+  switch (dir) {
+    case CardinalDirection.N:
+      return CardinalDirection.S;
+    case CardinalDirection.NE:
+      return CardinalDirection.SW;
+    case CardinalDirection.E:
+      return CardinalDirection.W;
+    case CardinalDirection.SE:
+      return CardinalDirection.NW;
+    case CardinalDirection.S:
+      return CardinalDirection.N;
+    case CardinalDirection.SW:
+      return CardinalDirection.NE;
+    case CardinalDirection.W:
+      return CardinalDirection.E;
+    case CardinalDirection.NW:
+      return CardinalDirection.SE;
+  }
+}
+
 export class Point {
   readonly x: number;
   readonly y: number;
