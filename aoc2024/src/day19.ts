@@ -18,28 +18,24 @@ function isPossible(design: string, towels: string[]): boolean {
   return false;
 }
 
-const cache = new Map<string, Array<string[]>>();
+const cache = new Map<string, number>();
 
-function getArrangements(design: string, towels: string[]): Array<string[]> {
+function getArrangementCount(design: string, towels: string[]): number {
   if (cache.has(design)) {
-    console.log(`cache hit for ${design}`);
+    // console.log(`cache hit for ${design}`);
     return cache.get(design)!;
   }
 
   const candidates = towels.filter((t) => design.startsWith(t));
-  const results = new Array<string[]>();
+  let results = 0;
   //   console.log(`${design} : checking ${candidates}`);
   for (let i = 0; i < candidates.length; i++) {
     const t = candidates[i];
     if (design.length === t.length) {
-      results.push([t]);
+      results += 1;
     } else {
-      const a = getArrangements(design.slice(t.length), towels);
-      a.forEach((path) => {
-        if (path.length > 0) {
-          results.push([t, ...path]);
-        }
-      });
+      const a = getArrangementCount(design.slice(t.length), towels);
+      results += a;
     }
   }
 
@@ -67,9 +63,9 @@ function part2() {
 
   let count = 0;
   designs.forEach((design) => {
-    const a = getArrangements(design, towels);
-    console.log(`*** ${design} : ${a.join(" ; ")}\n`);
-    count += a.length;
+    const a = getArrangementCount(design, towels);
+    console.log(`*** ${design} : ${a}\n`);
+    count += a;
   });
 
   console.log(`Count ${count}`);
