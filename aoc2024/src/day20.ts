@@ -9,6 +9,38 @@ type Cheat = {
   stepsSaved: number;
 };
 
+function getSteps(start: Point, track: Grid<string>): Map<string, number> {
+  // there aren't any branchs, so just follow the path and
+  // track how many steps are taken at each position. Then
+  // try taking out each piece of wall and compare the new
+  // number of steps.
+  let p = start;
+  const steps = new Map<string, number>();
+  steps.set(start.toString(), 0);
+  let stepCount = 0;
+  while (true) {
+    // find the next step
+    const nextSteps = getNonWallNeighbors(p, track).filter(
+      (e) => !steps.has(e.toString())
+    );
+    if (nextSteps.length > 1) {
+      console.log(`***** found a branch at ${p}`);
+      break;
+    } else {
+      p = nextSteps[0];
+      steps.set(p.toString(), ++stepCount);
+    }
+
+    if (track.getValue(p) === "E") {
+      console.log(
+        `found the end after ${steps.get(p.toString())} steps at ${p}`
+      );
+      break;
+    }
+  }
+  return steps;
+}
+
 function getNonWallNeighbors(p: Point, track: Grid<string>): Point[] {
   const neighbors = [
     p.step(CardinalDirection.N),
@@ -52,35 +84,7 @@ function part1() {
   const track = linesToCharGrid(lines);
   const start = track.find("S");
 
-  // there aren't any branchs, so just follow the path and
-  // track how many steps are taken at each position. Then
-  // try taking out each piece of wall and compare the new
-  // number of steps.
-  let p = start;
-  const steps = new Map<string, number>();
-  steps.set(start.toString(), 0);
-  let stepCount = 0;
-  while (true) {
-    // find the next step
-    const nextSteps = getNonWallNeighbors(p, track).filter(
-      (e) => !steps.has(e.toString())
-    );
-    if (nextSteps.length > 1) {
-      console.log(`***** found a branch at ${p}`);
-      break;
-    } else {
-      p = nextSteps[0];
-      steps.set(p.toString(), ++stepCount);
-    }
-
-    if (track.getValue(p) === "E") {
-      console.log(
-        `found the end after ${steps.get(p.toString())} steps at ${p}`
-      );
-      break;
-    }
-  }
-
+  const steps = getSteps(start, track);
   const cheats = new Map<number, Cheat[]>();
 
   steps.forEach((stepCount, step) => {
@@ -116,10 +120,102 @@ function part1() {
     }
   });
 
-  // 393 too low
   console.log(`${over100} save at least 100`);
 }
 
-function part2() {}
+function cheatString(cheat: Cheat) {
+  return `${cheat.cheatSteps[0]}-${cheat.cheatSteps[1]}`;
+}
 
-part1();
+function dist(p1: Point, p2: Point): number {
+  return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+}
+
+function findCheatsFromPoint(
+  cheatStart: Point,
+  steps: Map<string, number>,
+  track: Grid<string>
+): Cheat[] {
+  const MAX_CHEAT_LENGTH = 20;
+  const results: Cheat[] = [];
+
+  // Find all the points within 20 steps of this one.
+  // For each point that is on the track, add the cheat if it would save time.
+  const startStepCount = steps.get(cheatStart.toString())!;
+
+  // could optimize by limiting x and y to within 20 of the current point
+  for (let y = 0; y < track.grid.length; y++) {
+    for (let x = 0; x < track.grid[y].length; x++) {
+      const p = new Point(x, y);
+      const distance = dist(cheatStart, p);
+      if (distance <= MAX_CHEAT_LENGTH) {
+        const baseStepCount = steps.get(p.toString())!;
+        const cheatingStepCount = startStepCount + distance;
+        if (cheatingStepCount < baseStepCount) {
+          // console.log(`Found cheat from ${cheatStart} to ${s}`);
+          results.push({
+            cheatSteps: [cheatStart, p],
+            stepsSaved: baseStepCount - cheatingStepCount,
+          });
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+function part2() {
+  const track = linesToCharGrid(lines);
+  const start = track.find("S");
+
+  const steps = getSteps(start, track);
+
+  // map of steps saved -> number of cheats that save this amount of steps
+  const cheats = new Map<number, number>();
+
+  steps.forEach((stepCount, step) => {
+    // get the raw list of cheats from this point
+    const rawCheatsFromPoint = findCheatsFromPoint(
+      parsePoint(step),
+      steps,
+      track
+    );
+
+    // de-dupe them and pick the lowest step count for each
+    const cheatsFromPoint = new Map<string, number>();
+    rawCheatsFromPoint.forEach((rawCheat) => {
+      const s = cheatString(rawCheat);
+      if (cheatsFromPoint.has(s)) {
+        const other = cheatsFromPoint.get(s)!;
+        // Don't think this should happen?
+        if (rawCheat.stepsSaved < other) {
+          cheatsFromPoint.set(s, rawCheat.stepsSaved);
+        }
+      } else {
+        cheatsFromPoint.set(s, rawCheat.stepsSaved);
+      }
+    });
+
+    // then add these to the main map of cheats
+    cheatsFromPoint.forEach((stepsSaved, cheatString) => {
+      if (cheats.has(stepsSaved)) {
+        cheats.set(stepsSaved, cheats.get(stepsSaved)! + 1);
+      } else {
+        cheats.set(stepsSaved, 1);
+      }
+    });
+  });
+
+  let over100 = 0;
+  cheats.forEach((cheats, stepsSaved) => {
+    if (stepsSaved >= 100) {
+      console.log(`${cheats} save ${stepsSaved}`);
+      over100 += cheats;
+    }
+  });
+
+  console.log(`${over100} save at least 100`);
+}
+
+part2();
