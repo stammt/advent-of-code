@@ -1,5 +1,5 @@
-// Generate all permutations of ops that are length len.
-export function permutations(ops: string[], len: number): string[][] {
+// Generate all combinations of ops that are length len.
+export function combinations(ops: string[], len: number): string[][] {
   const result = new Array<string[]>();
 
   for (let i = 0; i < ops.length; i++) {
@@ -7,7 +7,7 @@ export function permutations(ops: string[], len: number): string[][] {
     if (len === 1) {
       result.push(prefix);
     } else {
-      const suffixes = permutations(ops, len - 1);
+      const suffixes = combinations(ops, len - 1);
       suffixes.forEach((element) => {
         result.push(prefix.concat(element));
       });
@@ -16,25 +16,19 @@ export function permutations(ops: string[], len: number): string[][] {
   return result;
 }
 
-export function allOrderings(s: string): string[] {
-  return allOrderingsInternal(s, s.length);
-}
-
-function allOrderingsInternal(s: string, len: number): string[] {
-  const results: string[][] = [];
-  for (let i = 0; i < s.length; i++) {
-    const prefix = [s[i]];
-    if (len === 1) {
-      results.push(prefix);
-    } else {
-      const suffixes = allOrderingsInternal(s.substring(1), len - 1);
-      suffixes.forEach((element) => {
-        results.push(prefix.concat(element));
-      });
-    }
-  }
-
-  return results.map((r) => r.join(""));
+export function stringPermutations(str: string): string[] {
+  if (str.length <= 2) return str.length === 2 ? [str, str[1] + str[0]] : [str];
+  return str
+    .split("")
+    .reduce(
+      (acc, letter, i) =>
+        acc.concat(
+          stringPermutations(str.substring(0, i) + str.substring(i + 1)).map(
+            (val) => letter + val
+          )
+        ),
+      []
+    );
 }
 
 // generate a list of all pairs of values in the given array

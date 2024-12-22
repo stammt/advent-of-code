@@ -1,7 +1,7 @@
 import { Grid, linesToCharGrid, toNumberGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
-import { allOrderings, permutations } from "./utils/utils";
+import { allOrderings, stringPermutations } from "./utils/utils";
 
 const lines = readInput("day21", true);
 
@@ -62,7 +62,7 @@ function buildMoves(
       moves.push(move);
     }
     // generate all orderings of this move, and add to previous lists
-    const x = allOrderings(moves.join(""));
+    const x = stringPermutations(moves.join(""));
     console.log(`orderings of ${moves}: ${x.join(" ** ")}`);
     moves.push(ACTIVATE);
   }
