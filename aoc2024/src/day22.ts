@@ -2,7 +2,7 @@ import { Grid, linesToCharGrid, toNumberGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
 
-const lines = readInput("day22", true);
+const lines = readInput("day22", false);
 
 function mix(n: bigint, secretNumber: bigint): bigint {
   return n ^ secretNumber;
@@ -63,15 +63,62 @@ function getPriceDiffs(prices: number[]): number[] {
 }
 
 function part2() {
+  //   lines.forEach((line) => {
+  //     const s = BigInt(line);
+  //     const prices = getPrices(s);
+  //     const priceDiffs = getPriceDiffs(prices);
+  //     for (let i = 0; i < prices.length; i++) {
+  //       const diff = i > 0 ? `${priceDiffs[i - 1]}` : "";
+  //       console.log(`${prices[i]} : ${diff}`);
+  //     }
+  //   });
+
+  const prices: number[][] = [];
+  const priceDiffs: number[][] = [];
   lines.forEach((line) => {
     const s = BigInt(line);
-    const prices = getPrices(s);
-    const priceDiffs = getPriceDiffs(prices);
-    for (let i = 0; i < prices.length; i++) {
-      const diff = i > 0 ? `${priceDiffs[i - 1]}` : "";
-      console.log(`${prices[i]} : ${diff}`);
+    const currentPrices = getPrices(s);
+    const currentPriceDiffs = getPriceDiffs(currentPrices);
+    prices.push(currentPrices);
+    priceDiffs.push(currentPriceDiffs);
+  });
+
+  // for each buyer, build a map of sequence to price (where sequence is a string representation)
+  // then get the union of all sequences and check the sum across buyers
+  const sequenceToPriceMap = new Array<Map<string, number>>();
+  const allSequences = new Set<string>();
+  for (let buyer = 0; buyer < prices.length; buyer++) {
+    const currentPrices = prices[buyer];
+    const currentPriceDiffs = priceDiffs[buyer];
+    const map = new Map<string, number>();
+    for (let start = 0; start < currentPriceDiffs.length - 5; start++) {
+      const sequence = currentPriceDiffs.slice(start, start + 4).join();
+      const value = currentPrices[start + 4];
+      if (!map.has(sequence)) {
+        map.set(sequence, value);
+        allSequences.add(sequence);
+      }
+    }
+    sequenceToPriceMap.push(map);
+  }
+
+  let bestSequence: string = "";
+  let bestSequencePrice: number = -Infinity;
+  allSequences.forEach((sequence) => {
+    let sum = 0;
+    for (let i = 0; i < sequenceToPriceMap.length; i++) {
+      const price = sequenceToPriceMap[i].get(sequence);
+      if (price) {
+        sum += price;
+      }
+    }
+    if (sum > bestSequencePrice) {
+      bestSequence = sequence;
+      bestSequencePrice = sum;
     }
   });
+
+  console.log(`best ${bestSequence} gets ${bestSequencePrice}`);
 }
 
 part2();
