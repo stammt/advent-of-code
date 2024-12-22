@@ -2,7 +2,7 @@ import { Grid, linesToCharGrid, toNumberGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
 
-const lines = readInput("day22", true);
+const lines = readInput("day22", false);
 
 function mix(n: bigint, secretNumber: bigint): bigint {
   return n ^ secretNumber;
@@ -23,7 +23,19 @@ function nextSecretNumber(secretNumber: bigint): bigint {
   return step3;
 }
 
-function part1() {}
+function part1() {
+  let sum = 0n;
+  lines.forEach((line) => {
+    let s = BigInt(line);
+    for (let i = 0; i < 2000; i++) {
+      s = nextSecretNumber(s);
+    }
+    sum += s;
+    console.log(`${line} : ${s}`);
+  });
+
+  console.log(`sum: ${sum}`);
+}
 
 function part2() {}
 
