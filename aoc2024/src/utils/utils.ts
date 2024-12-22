@@ -16,6 +16,27 @@ export function permutations(ops: string[], len: number): string[][] {
   return result;
 }
 
+export function allOrderings(s: string): string[] {
+  return allOrderingsInternal(s, s.length);
+}
+
+function allOrderingsInternal(s: string, len: number): string[] {
+  const results: string[][] = [];
+  for (let i = 0; i < s.length; i++) {
+    const prefix = [s[i]];
+    if (len === 1) {
+      results.push(prefix);
+    } else {
+      const suffixes = allOrderingsInternal(s.substring(1), len - 1);
+      suffixes.forEach((element) => {
+        results.push(prefix.concat(element));
+      });
+    }
+  }
+
+  return results.map((r) => r.join(""));
+}
+
 // generate a list of all pairs of values in the given array
 export function allPairs<T>(arr: T[]): { a: T; b: T }[] {
   const result = new Array<{ a: T; b: T }>();
