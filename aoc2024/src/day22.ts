@@ -63,16 +63,6 @@ function getPriceDiffs(prices: number[]): number[] {
 }
 
 function part2() {
-  //   lines.forEach((line) => {
-  //     const s = BigInt(line);
-  //     const prices = getPrices(s);
-  //     const priceDiffs = getPriceDiffs(prices);
-  //     for (let i = 0; i < prices.length; i++) {
-  //       const diff = i > 0 ? `${priceDiffs[i - 1]}` : "";
-  //       console.log(`${prices[i]} : ${diff}`);
-  //     }
-  //   });
-
   const prices: number[][] = [];
   const priceDiffs: number[][] = [];
   lines.forEach((line) => {
