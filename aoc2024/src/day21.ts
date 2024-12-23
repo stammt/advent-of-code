@@ -3,7 +3,7 @@ import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
 import { allOrderings, stringPermutations } from "./utils/utils";
 
-const lines = readInput("day21", false);
+const lines = readInput("day21", true);
 
 const UP = "^";
 const DOWN = "v";
@@ -147,39 +147,26 @@ function part1() {
       // const nextPos = keypad.find(seq[i]);
       console.log(`*** moving from ${lastPos} to ${seq[i]}`);
 
-      // find and cache the (a) shortest sequence at l3 that causes the number pad robot to
-      // move from start to end point. Don't need to find all combinations ever.
-
       // Find all moves that would accomplish this sequence, then find the shortest
       // move length and get all sequences of moves of that length
       const moves = buildMoves(seq[i], keypad, lastPos);
-      const shortestMoves = keepShortest(moves);
 
-      shortestMoves.forEach((m) => logMoves(m));
+      let shortestMoves = keepShortest(moves);
+      // shortestMoves.forEach((m) => logMoves(m));
 
       // repeat for the next two levels
-      const dirStartPos = new Point(2, 0);
-      const l2Moves = new Set<string>();
-      shortestMoves.forEach((m) => {
-        const theseMoves = buildMoves(m, dirpad, dirStartPos);
-        theseMoves.forEach((l2m) => l2Moves.add(l2m));
-      });
-      const l2ShortestMoves = Array.from(keepShortest(l2Moves));
-      const l2 = l2ShortestMoves[0];
-      console.log(`level 2 ${l2.length}: ${l2}`);
-      // l2ShortestMoves.forEach((m) => logMoves(m));
+      for (let level = 0; level < 2; level++) {
+        // dirpad always starts at "A", (2, 0);
+        const dirStartPos = new Point(2, 0);
 
-      const l3Moves = new Set<string>();
-      l2ShortestMoves.forEach((m) => {
-        const theseMoves = buildMoves(m, dirpad, dirStartPos);
-        theseMoves.forEach((l3m) => l3Moves.add(l3m));
-      });
-      const l3ShortestMoves = Array.from(keepShortest(l3Moves));
-      const l3 = l3ShortestMoves[0];
-      // const l3Moves = buildMoves(l2Moves, dirpad, dirpad, dirStartPos);
-      console.log(`level 3 ${l3.length}: ${l3}`);
-      sequenceLength += l3.length;
-      // l3ShortestMoves.forEach((m) => logMoves(m));
+        const levelMoves = new Set<string>();
+        shortestMoves.forEach((m) => {
+          const theseMoves = buildMoves(m, dirpad, dirStartPos);
+          theseMoves.forEach((l2m) => levelMoves.add(l2m));
+        });
+        shortestMoves = Array.from(keepShortest(levelMoves));
+      }
+      sequenceLength += shortestMoves[0].length;
 
       lastPos = keypad.find(seq[i]);
     }
@@ -194,6 +181,67 @@ function part1() {
   console.log(`total complexity: ${complexitySum}`);
 }
 
-function part2() {}
+function part2() {
+  let complexitySum = 0;
 
-part1();
+  // cache of move counts that it takes to move from one point to another on the
+  // first dirpad, from the last dirpad.
+  const moveCountCache = new Map<string, number>();
+
+  lines.forEach((seq) => {
+    console.log(`\n### sequence ${seq}`);
+    const keypadStartPos = new Point(2, 3); // A on the keypad
+
+    // Find all dirpad moves that would accomplish this sequence on the keypad, then find the shortest
+    // move length and get all sequences of moves of that length
+    const moves = buildMoves(seq, keypad, keypadStartPos);
+    const shortestMoves = keepShortest(moves);
+
+    // Then for each sequence of dirpad presses, expand out to the sequence of presses at the
+    // last dirpad.
+    const dirpadStartPos = new Point(2, 0);
+    let sequenceLength = 0;
+
+    shortestMoves.forEach((m) => {
+      let dirpadPos = dirpadStartPos;
+      for (let i = 0; i < m.length; i++) {
+        const dirpadNextPos = dirpad.find(m[i]);
+        const cacheKey = `${dirpadPos}:${dirpadNextPos}`;
+        if (moveCountCache.has(cacheKey)) {
+          console.log(
+            `cache hit for ${cacheKey}: ${moveCountCache.get(cacheKey)}`
+          );
+          sequenceLength += moveCountCache.get(cacheKey)!;
+        } else {
+          // repeat for the next twenty-five levels
+          console.log(
+            `Moving dirpad from ${dirpadPos} to ${dirpadNextPos} for ${m[i]}`
+          );
+          let shortestLevelMoves: string[] = [];
+          for (let level = 0; level < 2; level++) {
+            const levelMoves = buildMoves(m[i], dirpad, dirpadPos);
+            shortestLevelMoves = Array.from(keepShortest(levelMoves));
+          }
+          console.log(
+            `using ${shortestLevelMoves[0].length}: ${shortestLevelMoves[0]}`
+          );
+          moveCountCache.set(cacheKey, shortestLevelMoves[0].length);
+          sequenceLength += shortestLevelMoves[0].length;
+        }
+        dirpadPos = dirpadNextPos;
+      }
+    });
+
+    const complexity =
+      sequenceLength * parseInt(seq.substring(0, seq.length - 1));
+    console.log(
+      `total length for ${seq}: ${sequenceLength}, complexity ${complexity}`
+    );
+    complexitySum += complexity;
+  });
+
+  //593812 too low
+  console.log(`total complexity: ${complexitySum}`);
+}
+
+part2();
