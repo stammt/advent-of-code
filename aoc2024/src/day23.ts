@@ -1,7 +1,7 @@
 import { Grid, linesToCharGrid, toNumberGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
-import { allPairs } from "./utils/utils";
+import { allPairs, getSubsets } from "./utils/utils";
 
 const lines = readInput("day23", false);
 
@@ -41,6 +41,19 @@ function isConnected(
   return connections.has(c1) && connections.get(c1)!.includes(c2);
 }
 
+function areAllConnected(
+  computers: string[],
+  connections: Map<string, string[]>
+): boolean {
+  for (let x = 0; x < computers.length; x++) {
+    const c = computers[x];
+    for (let y = 0; y < computers.length; y++) {
+      if (x !== y && !isConnected(c, computers[y], connections)) return false;
+    }
+  }
+  return true;
+}
+
 function part1() {
   const connections = buildConnectionMap(lines);
   const computers = getComputers(lines);
@@ -69,6 +82,30 @@ function part1() {
   });
 }
 
-function part2() {}
+function part2() {
+  const connections = buildConnectionMap(lines);
+  const computers = getComputers(lines);
 
-part1();
+  const clusters = new Set<string>();
+  computers.forEach((c1) => {
+    // find all subsets of c1's connections that are all connected to each other
+    const c2Array = connections.get(c1)!;
+    const subsets = getSubsets(c2Array).filter((e) => e.length > 0);
+
+    subsets.forEach((candidate) => {
+      if (areAllConnected(candidate, connections)) {
+        clusters.add(`${[c1, ...candidate].sort()}`);
+      }
+    });
+  });
+  console.log(clusters.size);
+  let longest = "";
+  clusters.forEach((cluster) => {
+    if (cluster.length > longest.length) {
+      longest = cluster;
+    }
+  });
+  console.log(longest);
+}
+
+part2();

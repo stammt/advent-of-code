@@ -31,6 +31,23 @@ export function stringPermutations(str: string): string[] {
     );
 }
 
+export function getSubsets<T>(arr: T[]): T[][] {
+  const result: T[][] = [];
+
+  function backtrack(index: number, subset: T[]) {
+    result.push([...subset]);
+
+    for (let i = index; i < arr.length; i++) {
+      subset.push(arr[i]);
+      backtrack(i + 1, subset);
+      subset.pop();
+    }
+  }
+
+  backtrack(0, []);
+  return result;
+}
+
 // generate a list of all pairs of values in the given array
 export function allPairs<T>(arr: T[]): { a: T; b: T }[] {
   const result = new Array<{ a: T; b: T }>();
