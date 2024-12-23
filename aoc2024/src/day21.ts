@@ -3,7 +3,7 @@ import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
 import { allOrderings, stringPermutations } from "./utils/utils";
 
-const lines = readInput("day21", true);
+const lines = readInput("day21", false);
 
 const UP = "^";
 const DOWN = "v";
@@ -16,9 +16,35 @@ const keypad = linesToCharGrid(["789", "456", "123", "#0A"]);
 
 const dirpad = linesToCharGrid(["#^A", "<v>"]);
 
+// return false if this would take us onto an invalid square
+function validateMoves(
+  startPos: Point,
+  moves: string,
+  pad: Grid<string>
+): boolean {
+  let p = startPos;
+  for (let m = 0; m < moves.length; m++) {
+    const dir =
+      moves[m] === "^"
+        ? CardinalDirection.N
+        : moves[m] === "v"
+          ? CardinalDirection.S
+          : moves[m] === ">"
+            ? CardinalDirection.E
+            : CardinalDirection.W;
+    p = p.step(dir);
+    if (!pad.isValid(p) || pad.getValue(p) === INVALID) {
+      // console.log(
+      //   `moves not valid from ${startPos}: ${moves}: ${m} ${dir} ${pad.isValid(p)} ${pad.getValue(p)}`
+      // );
+      return false;
+    }
+  }
+  return true;
+}
+
 function buildMoves(
   seq: string,
-  fromPad: Grid<string>,
   toPad: Grid<string>,
   startPos: Point
 ): Set<string> {
@@ -26,6 +52,7 @@ function buildMoves(
 
   // for each char in the sequence, find the sequence to get it there
   let fromPos = startPos;
+  let lastFromPos = fromPos;
   for (let i = 0; i < seq.length; i++) {
     const c = seq[i];
     const toPos = toPad.find(c);
@@ -63,7 +90,9 @@ function buildMoves(
       stepMoves.push(move);
     }
     // generate all orderings of this move, and add to previous lists
-    const x = stringPermutations(stepMoves.join(""));
+    const x = stringPermutations(stepMoves.join("")).filter((e) =>
+      validateMoves(lastFromPos, e, toPad)
+    );
     if (moves.length === 0) {
       x.forEach((y) => {
         moves.push(y + ACTIVATE);
@@ -77,6 +106,7 @@ function buildMoves(
       });
       moves = nextMoves;
     }
+    lastFromPos = fromPos;
     // console.log(`orderings of ${moves}: ${x.join(" ** ")}`);
     // moves.push(ACTIVATE);
   }
@@ -86,16 +116,17 @@ function buildMoves(
   return moveSet;
 }
 
-function keepShortest(moves: Set<string>): Set<string> {
+// gets the first shortest entry we find
+function keepShortest(moves: Set<string>): string[] {
   let shortest = Infinity;
   moves.forEach((m) => {
     if (m.length < shortest) {
       shortest = m.length;
     }
   });
-  const results = new Set<string>();
+  const results = Array<string>();
   moves.forEach((m) => {
-    if (m.length === shortest) results.add(m);
+    if (m.length === shortest) results.push(m);
   });
   return results;
 }
@@ -105,37 +136,62 @@ function logMoves(moves: string) {
 }
 
 function part1() {
-  const seq = "029A";
-  const startPos = new Point(2, 3);
+  let complexitySum = 0;
+  lines.forEach((seq) => {
+    console.log(`\n### sequence ${seq}`);
+    const startPos = new Point(2, 3); // A
 
-  // Find all moves that would accomplish this sequence, then find the shortest
-  // move length and get all sequences of moves of that length
-  const moves = buildMoves(seq, dirpad, keypad, startPos);
-  const shortestMoves = keepShortest(moves);
+    let lastPos = startPos;
+    let sequenceLength = 0;
+    for (let i = 0; i < seq.length; i++) {
+      // const nextPos = keypad.find(seq[i]);
+      console.log(`*** moving from ${lastPos} to ${seq[i]}`);
 
-  shortestMoves.forEach((m) => logMoves(m));
+      // find and cache the (a) shortest sequence at l3 that causes the number pad robot to
+      // move from start to end point. Don't need to find all combinations ever.
 
-  // repeat for the next two levels
-  const dirStartPos = new Point(2, 0);
-  const l2Moves = new Set<string>();
-  shortestMoves.forEach((m) => {
-    const theseMoves = buildMoves(m, dirpad, dirpad, dirStartPos);
-    theseMoves.forEach((l2m) => l2Moves.add(l2m));
+      // Find all moves that would accomplish this sequence, then find the shortest
+      // move length and get all sequences of moves of that length
+      const moves = buildMoves(seq[i], keypad, lastPos);
+      const shortestMoves = keepShortest(moves);
+
+      shortestMoves.forEach((m) => logMoves(m));
+
+      // repeat for the next two levels
+      const dirStartPos = new Point(2, 0);
+      const l2Moves = new Set<string>();
+      shortestMoves.forEach((m) => {
+        const theseMoves = buildMoves(m, dirpad, dirStartPos);
+        theseMoves.forEach((l2m) => l2Moves.add(l2m));
+      });
+      const l2ShortestMoves = Array.from(keepShortest(l2Moves));
+      const l2 = l2ShortestMoves[0];
+      console.log(`level 2 ${l2.length}: ${l2}`);
+      // l2ShortestMoves.forEach((m) => logMoves(m));
+
+      const l3Moves = new Set<string>();
+      l2ShortestMoves.forEach((m) => {
+        const theseMoves = buildMoves(m, dirpad, dirStartPos);
+        theseMoves.forEach((l3m) => l3Moves.add(l3m));
+      });
+      const l3ShortestMoves = Array.from(keepShortest(l3Moves));
+      const l3 = l3ShortestMoves[0];
+      // const l3Moves = buildMoves(l2Moves, dirpad, dirpad, dirStartPos);
+      console.log(`level 3 ${l3.length}: ${l3}`);
+      sequenceLength += l3.length;
+      // l3ShortestMoves.forEach((m) => logMoves(m));
+
+      lastPos = keypad.find(seq[i]);
+    }
+
+    const complexity =
+      sequenceLength * parseInt(seq.substring(0, seq.length - 1));
+    console.log(
+      `total length for ${seq}: ${sequenceLength}, complexity ${complexity}`
+    );
+    complexitySum += complexity;
   });
-  const l2ShortestMoves = keepShortest(l2Moves);
-  console.log(`level 2`);
-  l2ShortestMoves.forEach((m) => logMoves(m));
-
-  const l3Moves = new Set<string>();
-  l2ShortestMoves.forEach((m) => {
-    const theseMoves = buildMoves(m, dirpad, dirpad, dirStartPos);
-    theseMoves.forEach((l3m) => l2Moves.add(l3m));
-  });
-  const l3ShortestMoves = keepShortest(l3Moves);
-  // const l3Moves = buildMoves(l2Moves, dirpad, dirpad, dirStartPos);
-  console.log(`level 3`);
-
-  l3ShortestMoves.forEach((m) => logMoves(m));
+  console.log(`total complexity: ${complexitySum}`);
 }
 
 function part2() {}
