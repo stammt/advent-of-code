@@ -73,6 +73,33 @@ function part1() {
   console.log(`z=${z} : ${zOutputValues}`);
 }
 
-function part2() {}
+function getInputAsDecimal(c: string, inputs: Map<string, boolean>): number {
+  const labels = new Array<string>();
+  inputs.forEach((v, k) => {
+    if (k.startsWith(c)) {
+      labels.push(k);
+    }
+  });
+  labels.sort();
+  const values = new Array<number>();
+  labels.forEach((l) => values.push(inputs.get(l) ? 1 : 0));
+  return parseInt(values.reverse().join(""), 2);
+}
 
-part1();
+function part2() {
+  const inputs = parseInputs(getSection(0, lines));
+  const gates = parseGates(getSection(1, lines));
+
+  // first read all x,y values and see what z should be
+  const x = getInputAsDecimal("x", inputs);
+  const y = getInputAsDecimal("y", inputs);
+  const z = x + y;
+  const zExpectedValues = z
+    .toString(2)
+    .split("")
+    .reverse()
+    .map((e) => parseInt(e));
+  console.log(`x=${x}, y=${y}, z=${z} ${zExpectedValues}`);
+}
+
+part2();
