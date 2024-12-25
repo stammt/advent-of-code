@@ -163,20 +163,13 @@ function part2() {
   //     .map((e) => parseInt(e));
   //   console.log(`x=${x}, y=${y}, z=${z} ${zExpectedValues}`);
 
-  const x = getInputAsDecimal("x", inputs)
-    .toString(2)
-    .split("")
-    .map((e) => parseInt(e));
-  const y = getInputAsDecimal("y", inputs)
-    .toString(2)
-    .split("")
-    .map((e) => parseInt(e));
-  const zExpectedValues = new Array<number>();
+  const x = getInputAsBits("x", inputs);
+  const y = getInputAsBits("y", inputs);
+  const zExpectedValues = new Array<number>(); // 000101
   for (let i = 0; i < x.length; i++) {
     zExpectedValues.push(x[i] === 1 && y[i] === 1 ? 1 : 0);
   }
-  zExpectedValues.reverse();
-  const zOutputValues = getOutput(gates, inputs);
+  const zOutputValues = getOutput(gates, inputs); // 100100
 
   console.log(x);
   console.log(y);
