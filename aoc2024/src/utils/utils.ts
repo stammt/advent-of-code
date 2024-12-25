@@ -1,6 +1,6 @@
 // Generate all combinations of ops that are length len.
-export function combinations(ops: string[], len: number): string[][] {
-  const result = new Array<string[]>();
+export function combinations<T>(ops: T[], len: number): T[][] {
+  const result = new Array<T[]>();
 
   for (let i = 0; i < ops.length; i++) {
     const prefix = [ops[i]];
