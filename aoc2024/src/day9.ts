@@ -106,7 +106,7 @@ function part1() {
 
 function part2() {
   const blocks = parseLine(lines[0]);
-  console.log(printBlocks(blocks));
+  // console.log(printBlocks(blocks));
 
   let fileId = blocks[blocks.length - 1].fileId;
   while (fileId > 0) {
@@ -138,4 +138,6 @@ function part2() {
   console.log(`checksum: ${checksum(blocks)}`);
 }
 
+console.time();
 part2();
+console.timeEnd();

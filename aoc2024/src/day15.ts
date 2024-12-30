@@ -1,22 +1,10 @@
 import {
   Grid,
   linesToCharGrid,
-  linesToGrid,
   printSparseGrid,
   sparseGrid,
-  toNumberGrid,
 } from "./utils/char-grid";
-import {
-  color,
-  log,
-  red,
-  green,
-  cyan,
-  cyanBright,
-  greenBG,
-  gray,
-  redBright,
-} from "console-log-colors";
+import { greenBG, gray, redBright } from "console-log-colors";
 import { getSection, readInput } from "./utils/file-utils";
 import { CardinalDirection, parsePoint, Point } from "./utils/point";
 
@@ -233,13 +221,13 @@ function part2() {
     .map((e) => e.trim())
     .join();
 
-  console.log("*** Map");
-  map.log(styles);
-  console.log("\n\nMoves:  ");
-  console.log(moves.length);
-  console.log(moves);
+  // console.log("*** Map");
+  // map.log(styles);
+  // console.log("\n\nMoves:  ");
+  // console.log(moves.length);
+  // console.log(moves);
 
-  let robot = map.find("@")![0];
+  let robot = map.find("@")!;
   console.log(`Robot starting at ${robot}`);
 
   for (let i = 0; i < moves.length; i++) {
@@ -271,4 +259,6 @@ function part2() {
   console.log(`gps sum ${sum}`);
 }
 
+console.time();
 part2();
+console.timeEnd();

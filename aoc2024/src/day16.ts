@@ -373,8 +373,10 @@ function part2() {
     }
   }
 
-  maze.log(styles, seatsOverlay(seats));
+  // maze.log(styles, seatsOverlay(seats));
   console.log(`Found seats: ${seats.size}`);
 }
 
+console.time();
 part2();
+console.timeEnd();

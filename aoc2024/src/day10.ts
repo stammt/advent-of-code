@@ -1,4 +1,4 @@
-import { Grid, toNumberGrid } from "./utils/char-grid";
+import { Grid, linesToGrid } from "./utils/char-grid";
 import { readInput } from "./utils/file-utils";
 import { CardinalDirection, Point } from "./utils/point";
 
@@ -70,7 +70,7 @@ function countPathsToNine(
 }
 
 function part1() {
-  const grid = toNumberGrid(lines);
+  const grid = linesToGrid(lines, parseInt);
   console.log(grid);
   let total = 0;
   grid.iterate((x, y, c) => {
@@ -92,8 +92,8 @@ function part1() {
 }
 
 function part2() {
-  const grid = toNumberGrid(lines);
-  console.log(grid);
+  const grid = linesToGrid(lines, parseInt);
+  // console.log(grid);
   let total = 0;
   grid.iterate((x, y, c) => {
     if (c === 0) {
@@ -101,11 +101,13 @@ function part2() {
       const paths = new Array<Point[]>();
       const count = countPathsToNine(grid, new Point(x, y), [], paths);
       //   console.log(`found ${count} from ${x}, ${y}`);
-      console.log(`**** found ${paths.length} from ${x},${y}`);
+      // console.log(`**** found ${paths.length} from ${x},${y}`);
       total += paths.length;
     }
   });
   console.log(`total ${total}`);
 }
 
+console.time();
 part2();
+console.timeEnd();

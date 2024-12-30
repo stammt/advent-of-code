@@ -80,4 +80,6 @@ function part2() {
   console.log(`node count: ${uniqueNodes.size}`);
 }
 
+console.time();
 part2();
+console.timeEnd();

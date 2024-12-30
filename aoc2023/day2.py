@@ -6,7 +6,7 @@
 
 # lines = input.splitlines()
 
-f = open('input-day2.txt', 'r')
+f = open('input/input-day2.txt', 'r')
 lines = f.readlines()
 
 

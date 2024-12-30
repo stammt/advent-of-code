@@ -6,7 +6,10 @@
 # Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"""
 # lines = list(map(lambda x: x.strip(), input.splitlines()))
 
-f = open('input-day4.txt', 'r')
+import time
+
+
+f = open('input/input-day4.txt', 'r')
 lines = f.readlines()
 
 
@@ -33,7 +36,7 @@ def part2():
         yoursSet = set(map(lambda x: int(x), yoursList))
 
         winnerCount = len(set(filter(lambda x: x in winnersSet, yoursSet)))
-        print(f'Card {i} has {winnerCount} winners')
+        # print(f'Card {i} has {winnerCount} winners')
         if winnerCount > 0:
             cardCount = cardCounts[i]
             for x in range(i+1, min(len(lines), i+1+winnerCount)):
@@ -44,5 +47,7 @@ def part2():
     print(f'Total cards: {totalCards}')
 
 
-
+start = time.perf_counter()
 part2()
+end = time.perf_counter()
+print(f'Took {(end - start) * 1000}ms ')

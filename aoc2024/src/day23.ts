@@ -82,7 +82,8 @@ function part1() {
   });
 }
 
-function part2() {
+// 2.8s
+function part2_first() {
   const connections = buildConnectionMap(lines);
   const computers = getComputers(lines);
 
@@ -108,4 +109,86 @@ function part2() {
   console.log(longest);
 }
 
+// 950ms
+function part2_second() {
+  const connections = buildConnectionMap(lines);
+  const computers = getComputers(lines);
+
+  const clusters = new Set<string>();
+  computers.forEach((c1) => {
+    // find all subsets of c1's connections that are all connected to each other
+    const c2Array = connections.get(c1)!;
+    const subsets = getSubsets(c2Array).filter((e) => e.length > 0);
+    subsets.sort((a, b) => a.length - b.length);
+
+    // Sort by subset size, and stop when we find one that's all connected
+    for (let i = subsets.length - 1; i--; i > 0) {
+      const candidate = subsets[i];
+      if (areAllConnected(candidate, connections)) {
+        clusters.add(`${[c1, ...candidate].sort()}`);
+        break;
+      }
+    }
+  });
+  console.log(clusters.size);
+  let longest = "";
+  clusters.forEach((cluster) => {
+    if (cluster.length > longest.length) {
+      longest = cluster;
+    }
+  });
+  console.log(longest);
+}
+
+function expandClique(
+  computer: string,
+  click: Set<string>,
+  connections: Map<string, string[]>
+): Set<string> {
+  click.add(computer);
+
+  connections.get(computer)!.forEach((c2) => {
+    if (!click.has(c2)) {
+      const c2Connections = connections.get(c2)!;
+      // click is a subset of c2Connections
+      if (isSubset(click, c2Connections)) {
+        expandClique(c2, click, connections);
+      }
+    }
+  });
+  return click;
+}
+
+function isSubset(a: Set<string>, b: Array<string>): boolean {
+  const aa = Array.from(a);
+  for (let i = 0; i < aa.length; i++) {
+    if (!b.includes(aa[i])) return false;
+  }
+  return true;
+}
+
+// 12ms
+function part2() {
+  const connections = buildConnectionMap(lines);
+  const computers = getComputers(lines);
+
+  const clusters = new Array<Set<string>>();
+  computers.forEach((c1) => {
+    const click = expandClique(c1, new Set<string>(), connections);
+    clusters.push(click);
+  });
+  console.log(clusters.length);
+  let longest: Set<string> = new Set<string>();
+  clusters.forEach((cluster) => {
+    if (cluster.size > longest.size) {
+      longest = cluster;
+    }
+  });
+  const final = Array.from(longest);
+  final.sort();
+  console.log(`${final.join(",")}`);
+}
+
+console.time();
 part2();
+console.timeEnd();
