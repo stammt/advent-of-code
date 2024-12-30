@@ -37,13 +37,4 @@ def part2():
     c = sum(map(is_safe_dampened, reports))
     print(f'dampened safe count {c}')
 
-p1start = time.perf_counter()
-part1()
-p1end = time.perf_counter()
-
-p2start = time.perf_counter()
-part2()
-p2end = time.perf_counter()
-
-print(f'Part 1: {(p1end - p1start)*1000}ms')
-print(f'Part 2: {(p2end - p2start)*1000}ms')
+aoc_utils.runIt(part1, part2)

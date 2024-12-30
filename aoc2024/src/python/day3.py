@@ -1,6 +1,6 @@
 from operator import mul
 import time
-import aoc_utils
+from aoc_utils import runIt, PuzzleInput
 import functools
 import math
 import re
@@ -9,7 +9,7 @@ import sys
 
 
 testInput = r"""xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"""
-input = aoc_utils.PuzzleInput('input/day3.txt', testInput)
+input = PuzzleInput('input/day3.txt', testInput)
 
 lines = input.getInputLines(test=False)
 line = ''.join(lines)
@@ -36,13 +36,4 @@ def part2():
     print(f'sum {c}')
 
 
-p1start = time.perf_counter()
-part1()
-p1end = time.perf_counter()
-
-p2start = time.perf_counter()
-part2()
-p2end = time.perf_counter()
-
-print(f'Part 1: {(p1end - p1start)*1000}ms')
-print(f'Part 2: {(p2end - p2start)*1000}ms')
+runIt(part1, part2)

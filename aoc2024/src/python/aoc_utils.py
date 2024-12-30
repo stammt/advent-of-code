@@ -1,4 +1,5 @@
 from enum import Enum
+import time
 
 class PuzzleInput:
     def __init__(self, fileName, testInput) -> None:
@@ -17,6 +18,19 @@ class PuzzleInput:
     def getInputLines(self, test) -> list[str]:
         return self.getTestInput() if test == True else self.getFileInput()
     
+def runIt(part1, part2):
+    p1start = time.perf_counter()
+    part1()
+    p1end = time.perf_counter()
+
+    p2start = time.perf_counter()
+    part2()
+    p2end = time.perf_counter()
+
+    print(f'\n---- Timing ----')
+    print(f'Part 1: {((p1end - p1start)*1000):.2f}ms')
+    print(f'Part 2: {((p2end - p2start)*1000):.2f}ms')
+
 # Parse a string of space separated ints into a list of ints
 def splitInts(line, separator=' ') -> list[int]:
     return list(map(int, line.strip().split(separator)))
