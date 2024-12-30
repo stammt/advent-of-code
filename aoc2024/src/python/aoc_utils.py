@@ -19,7 +19,7 @@ class PuzzleInput:
     
 # Parse a string of space separated ints into a list of ints
 def splitInts(line, separator=' ') -> list[int]:
-    return list(map(lambda c: int(c), line.strip().split(separator)))
+    return list(map(int, line.strip().split(separator)))
 
 class Direction(Enum):
     NORTH = 1,
