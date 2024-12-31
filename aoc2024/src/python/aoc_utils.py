@@ -1,5 +1,6 @@
 from enum import Enum
 import time
+from typing import Tuple, Union
 
 class PuzzleInput:
     def __init__(self, fileName, testInput) -> None:
@@ -18,6 +19,7 @@ class PuzzleInput:
     def getInputLines(self, test) -> list[str]:
         return self.getTestInput() if test == True else self.getFileInput()
     
+# Run parts 1&2 and print timing info
 def runIt(part1, part2):
     p1start = time.perf_counter()
     part1()
@@ -35,16 +37,45 @@ def runIt(part1, part2):
 def splitInts(line, separator=' ') -> list[int]:
     return list(map(int, line.strip().split(separator)))
 
-class Direction(Enum):
-    NORTH = 1,
-    SOUTH = 2,
-    EAST = 3,
-    WEST = 4
 
-# Returns the next step in the given direction. Note this assumes y increases going SOUTH.
-def gridStep(pos, dir):
-    x = pos[0] - 1 if dir == Direction.WEST else pos[0] + 1 if dir == Direction.EAST else pos[0]
-    y = pos[1] - 1 if dir == Direction.NORTH else pos[1] + 1 if dir == Direction.SOUTH else pos[1]
-    return (x, y, dir)
+# Point and direction helpers
+Point = Tuple[int, int]
 
+def x(pos:Point) -> int:
+    return pos[0]
+def y(pos:Point) -> int:
+    return pos[1]
+
+cardinal_directions = North, South, East, West = ((0, -1), (0, 1), (1, 0), (-1, 0))
+ordinal_directions = NE, NW, SE, SW = ((1, -1), (-1, -1), (1, 1), (-1, 1))
+all_directions = cardinal_directions + ordinal_directions
+
+def add(pos:Point, dir:Point) -> Point:
+    return (x(pos) + x(dir), y(pos) + y(dir))
+
+def sub(pos:Point, dir:Point) -> Point:
+    return (x(pos) - x(dir), y(pos) - y(dir))
+
+def mul(pos:Point, k: int) -> Point:
+    return (pos[0] * k, pos[1] * k)
+
+class Grid:
+    def __init__(self, lines) -> None:
+        self.lines = lines
+
+    def isInRange(self, pos) -> bool:
+        return y(pos) >= 0 and y(pos) < len(self.lines) and x(pos) >= 0 and x(pos) < len(self.lines[0])
+
+    
+    def get(self, pos) -> Union[str, None]:
+        if (not self.isInRange(pos)):
+            return None
         
+        return self.lines[y(pos)][x(pos)]
+    
+    def findAll(self, val:str) -> list[Point]:
+        return [(x, y) for y in range(len(self.lines)) for x in range(len(self.lines[y])) if self.get((x, y)) == val ]
+    
+    def neighbors(self, pos:Point, dirs) -> list[Point]:
+        candidates = [add(pos, dir) for dir in dirs]
+        return [c for c in candidates if self.isInRange(c)]
