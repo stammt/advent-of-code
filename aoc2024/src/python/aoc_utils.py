@@ -19,6 +19,14 @@ class PuzzleInput:
     def getInputLines(self, test) -> list[str]:
         return self.getTestInput() if test == True else self.getFileInput()
     
+def get_input_section(lines:list[str], section:int) -> list[str]:
+    blanks = [i for i in range(len(lines)) if len(lines[i]) == 0]
+    if (section == 0):
+        return lines[:blanks[0]]
+    if (section == len(blanks)):
+        return lines[blanks[len(blanks) - 1]+1:]
+    return lines[blanks[section-1]+1 : blanks[section]]
+    
 # Run parts 1&2 and print timing info
 def runIt(part1, part2):
     p1start = time.perf_counter()
@@ -34,8 +42,8 @@ def runIt(part1, part2):
     print(f'Part 2: {((p2end - p2start)*1000):.2f}ms')
 
 # Parse a string of space separated ints into a list of ints
-def splitInts(line, separator=' ') -> list[int]:
-    return list(map(int, line.strip().split(separator)))
+def splitInts(line, separator=' ') -> Tuple[int, ...]:
+    return tuple(map(int, line.strip().split(separator)))
 
 
 # Point and direction helpers
