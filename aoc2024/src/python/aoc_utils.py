@@ -59,7 +59,7 @@ ordinal_directions = NE, NW, SE, SW = ((1, -1), (-1, -1), (1, 1), (-1, 1))
 all_directions = cardinal_directions + ordinal_directions
 
 def add(pos:Point, dir:Point) -> Point:
-    return (x(pos) + x(dir), y(pos) + y(dir))
+    return (pos[0] + dir[0], pos[1] + dir[1])
 
 def sub(pos:Point, dir:Point) -> Point:
     return (x(pos) - x(dir), y(pos) - y(dir))
@@ -67,22 +67,33 @@ def sub(pos:Point, dir:Point) -> Point:
 def mul(pos:Point, k: int) -> Point:
     return (pos[0] * k, pos[1] * k)
 
+def turn(dir:Point, turn_direction:str) -> Point:
+    (x, y) = dir
+    return (y, -x) if turn_direction[0] in ('L', 'l') else (-y, x)
+
 class Grid:
     def __init__(self, lines) -> None:
         self.lines = lines
+        self.max_y = len(lines)
+        self.max_x = len(lines[0])
 
     def isInRange(self, pos) -> bool:
-        return y(pos) >= 0 and y(pos) < len(self.lines) and x(pos) >= 0 and x(pos) < len(self.lines[0])
+        return pos[1] >= 0 and pos[1] < self.max_y and pos[0] >= 0 and pos[0] < self.max_x
 
     
     def get(self, pos) -> Union[str, None]:
         if (not self.isInRange(pos)):
             return None
         
-        return self.lines[y(pos)][x(pos)]
+        return self.lines[pos[1]][pos[0]]
     
     def findAll(self, val:str) -> list[Point]:
-        return [(x, y) for y in range(len(self.lines)) for x in range(len(self.lines[y])) if self.get((x, y)) == val ]
+        return [(x, y) for y in range(self.max_y) for x in range(self.max_x) if self.get((x, y)) == val ]
+    
+    def find(self, val:str) -> Union[Point, None]:
+        all = self.findAll(val)
+        if (len(all) > 0): return all[0]
+        return None
     
     def neighbors(self, pos:Point, dirs) -> list[Point]:
         candidates = [add(pos, dir) for dir in dirs]

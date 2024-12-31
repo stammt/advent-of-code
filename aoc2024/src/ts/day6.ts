@@ -71,9 +71,12 @@ function part2() {
   // const { points: basePoints } = getPointsOnPath(start);
 
   let count = 0;
+  let i = 0;
   for (let y = 0; y < lines.length; y++) {
     for (let x = 0; x < lines[y].length; x++) {
       const p = new Point(x, y);
+      console.log(`trying  ${i} : ${p}`);
+      i++;
       if (!p.equals(start)) {
         const { loop } = getPointsOnPath(start, p);
         if (loop) {
