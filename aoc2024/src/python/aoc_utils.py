@@ -77,17 +77,9 @@ class Grid(dict):
         self.update({(x, y): val 
                         for y, row in enumerate(lines) 
                         for x, val in enumerate(row)})
-                        # if val not in skip})
 
     def isInRange(self, pos) -> bool:
         return pos[1] >= 0 and pos[1] < self.size[1] and pos[0] >= 0 and pos[0] < self.size[0]
-
-    
-    # def get(self, pos) -> Union[str, None]:
-    #     if (not self.isInRange(pos)):
-    #         return None
-        
-    #     return self.lines[pos[1]][pos[0]]
     
     def findAll(self, val:str) -> list[Point]:
         return [p for p in self if self[p] == val]
