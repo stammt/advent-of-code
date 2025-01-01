@@ -1,5 +1,6 @@
+import { time, timeEnd, timeLog } from "console";
 import { readInput } from "./utils/file-utils";
-import { permutations } from "./utils/utils";
+import { combinations } from "./utils/utils";
 
 const lines = readInput("day7", false);
 
@@ -25,7 +26,7 @@ function part1() {
   lines.forEach((line) => {
     const [testValue, numbersString] = line.split(":").map((e) => e.trim());
     const numbers = numbersString.split(" ").map((e) => parseInt(e.trim()));
-    const opPermutations = permutations(["+", "*"], numbers.length - 1);
+    const opPermutations = combinations(["+", "*"], numbers.length - 1);
     console.log(`${testValue} from ${numbers} - ${opPermutations}`);
 
     for (let i = 0; i < opPermutations.length; i++) {
@@ -46,13 +47,13 @@ function part2() {
   lines.forEach((line) => {
     const [testValue, numbersString] = line.split(":").map((e) => e.trim());
     const numbers = numbersString.split(" ").map((e) => parseInt(e.trim()));
-    const opPermutations = permutations(["+", "*", "||"], numbers.length - 1);
+    const opPermutations = combinations(["+", "*", "||"], numbers.length - 1);
     // console.log(`${testValue} from ${numbers} - ${opPermutations.join(" ")}`);
 
     for (let i = 0; i < opPermutations.length; i++) {
       const result = evaluate(numbers, opPermutations[i]);
       if (result === BigInt(testValue)) {
-        console.log(`success with ${opPermutations[i]}`);
+        // console.log(`success with ${opPermutations[i]}`);
         sum = sum + result;
         break;
       }
@@ -62,4 +63,6 @@ function part2() {
   console.log(`sum: ${sum}`);
 }
 
+time();
 part2();
+timeEnd();

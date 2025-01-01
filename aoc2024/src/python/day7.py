@@ -29,29 +29,45 @@ def checkValue(value, equation, ops) -> bool:
     acc = equation[0]
     for i, op in enumerate(ops):
         acc = op(acc, equation[i+1])
+        if (acc > value): return False
     return (acc == value)
 
+def concat(v1:int, v2:int) -> int:
+    return int(str(v1) + str(v2))
+
 def part1():
-    values = set()
+    values = []
     for valueStr, equationStr in calibrations:
         value = int(valueStr)
         equation = splitInts(equationStr, ' ')
         slots = len(equation) - 1
-        combos = product([add, mul], repeat=slots)
-        for opCombo in combos:
+        for opCombo in product([add, mul], repeat=slots):
             if checkValue(value, equation, opCombo):
-                values.add(value)
+                values.append(value)
                 break
         
     print(f'sum {sum(values)}')
 
 def part2():
-    # baseVisited = findVisited()
-    # c = 0
-    # for p in baseVisited - {start}:
-    #     if (causesLoop(p)):
-    #         c+=1
-
-    print(f'sum:')
+    values = []
+    for valueStr, equationStr in calibrations:
+        value = int(valueStr)
+        equation = splitInts(equationStr, ' ')
+        slots = len(equation) - 1
+        for opCombo in product([add, mul, concat], repeat=slots):
+            if checkValue(value, equation, opCombo):
+                values.append(value)
+                break
+        
+    print(f'sum {sum(values)}')
 
 runIt(part1, part2)
+
+# my part2 takes almost 10 sec to run, see more efficient version here from norvig:
+# def can_be_calibrated(equation: ints, operators=(operator.add, operator.mul)) -> bool:
+#     """Can the equation be balanced using '+' and '*' operators?"""
+#     target, first, *rest = equation
+#     results = [first] # A list of all possible results of the partial computation
+#     for y in rest:
+#         results = [op(x, y) for x in results if x <= target for op in operators]
+#     return target in results
