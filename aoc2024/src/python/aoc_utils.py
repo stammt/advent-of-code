@@ -1,6 +1,6 @@
 from enum import Enum
 import time
-from typing import Tuple, Union
+from typing import Set, Tuple, Union
 
 class PuzzleInput:
     def __init__(self, fileName, testInput) -> None:
@@ -92,3 +92,18 @@ class Grid(dict):
     def neighbors(self, pos:Point, dirs) -> list[Point]:
         candidates = [add(pos, dir) for dir in dirs]
         return [c for c in candidates if self.isInRange(c)]
+    
+    def unique_values(self, ignore={'.'}) -> Set[str]:
+        return set(self.values()) - ignore
+    
+    def to_string(self, overlay:dict = {}) -> str:
+        s = ''
+        for y in range(self.size[1]):
+            for x in range(self.size[0]):
+                s += overlay[(x,y)] if (x,y) in overlay else self[(x,y)]
+            s += '\n'
+        return s
+    
+    def __str__(self):
+        return self.to_string()
+
