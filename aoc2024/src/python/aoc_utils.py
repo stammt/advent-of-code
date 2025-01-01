@@ -71,24 +71,26 @@ def turn(dir:Point, turn_direction:str) -> Point:
     (x, y) = dir
     return (y, -x) if turn_direction[0] in ('L', 'l') else (-y, x)
 
-class Grid:
+class Grid(dict):
     def __init__(self, lines) -> None:
-        self.lines = lines
-        self.max_y = len(lines)
-        self.max_x = len(lines[0])
+        self.size = (max(map(len, lines)), len(lines))
+        self.update({(x, y): val 
+                        for y, row in enumerate(lines) 
+                        for x, val in enumerate(row)})
+                        # if val not in skip})
 
     def isInRange(self, pos) -> bool:
-        return pos[1] >= 0 and pos[1] < self.max_y and pos[0] >= 0 and pos[0] < self.max_x
+        return pos[1] >= 0 and pos[1] < self.size[1] and pos[0] >= 0 and pos[0] < self.size[0]
 
     
-    def get(self, pos) -> Union[str, None]:
-        if (not self.isInRange(pos)):
-            return None
+    # def get(self, pos) -> Union[str, None]:
+    #     if (not self.isInRange(pos)):
+    #         return None
         
-        return self.lines[pos[1]][pos[0]]
+    #     return self.lines[pos[1]][pos[0]]
     
     def findAll(self, val:str) -> list[Point]:
-        return [(x, y) for y in range(self.max_y) for x in range(self.max_x) if self.get((x, y)) == val ]
+        return [p for p in self if self[p] == val]
     
     def find(self, val:str) -> Union[Point, None]:
         all = self.findAll(val)

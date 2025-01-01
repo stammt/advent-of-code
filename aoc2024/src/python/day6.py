@@ -29,8 +29,8 @@ start = grid.find('^')
 def findVisited() -> Set[Point]:
     dir = North
     path = [start]
-    while (grid.isInRange(nextPos := add(path[-1], dir))):
-        if (grid.get(nextPos) == '#'):
+    while (nextPos := add(path[-1], dir)) in grid:
+        if (grid[nextPos] == '#'):
             dir = turn(dir, 'R')
         else:
             path.append(nextPos)
@@ -41,8 +41,8 @@ def causesLoop(obstacle: Point) -> bool:
     dir = North
     pos = start
     turns = {(start, dir)}
-    while (grid.isInRange(nextPos := add(pos, dir))):
-        if (grid.get(nextPos) == '#'):
+    while (nextPos := add(pos, dir)) in grid:
+        if (grid[nextPos] == '#' or nextPos == obstacle):
             dir = turn(dir, 'R')
             if ((nextPos, dir) in turns):
                 return True
@@ -59,10 +59,8 @@ def part2():
     baseVisited = findVisited()
     c = 0
     for p in baseVisited - {start}:
-        grid.lines[p[1]][p[0]] = '#'
         if (causesLoop(p)):
             c+=1
-        grid.lines[p[1]][p[0]] = '.'
 
     print(f'sum: {c}')
 
