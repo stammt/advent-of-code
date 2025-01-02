@@ -97,7 +97,7 @@ function part2() {
   let total = 0;
   grid.iterate((x, y, c) => {
     if (c === 0) {
-      console.log(`starting at ${x}, ${y}`);
+      // console.log(`starting at ${x}, ${y}`);
       const paths = new Array<Point[]>();
       const count = countPathsToNine(grid, new Point(x, y), [], paths);
       //   console.log(`found ${count} from ${x}, ${y}`);

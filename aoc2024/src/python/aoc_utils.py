@@ -16,8 +16,12 @@ class PuzzleInput:
         f = open(self.fileName, 'r')
         return list(map(lambda x: x.strip(), f.readlines()))
     
-    def getInputLines(self, test) -> list[str]:
-        return self.getTestInput() if test == True else self.getFileInput()
+    def getInputLines(self, test, mapper=None) -> list:
+        lines = self.getTestInput() if test == True else self.getFileInput()
+        if (mapper):
+            lines = [list(map(mapper, line)) for line in lines]
+        return lines
+
     
 def get_input_section(lines:list[str], section:int) -> list[str]:
     blanks = [i for i in range(len(lines)) if len(lines[i]) == 0]
@@ -91,7 +95,7 @@ class Grid(dict):
     
     def neighbors(self, pos:Point, dirs) -> list[Point]:
         candidates = [add(pos, dir) for dir in dirs]
-        return [c for c in candidates if self.isInRange(c)]
+        return [c for c in candidates if c in self]
     
     def unique_values(self, ignore={'.'}) -> Set[str]:
         return set(self.values()) - ignore
