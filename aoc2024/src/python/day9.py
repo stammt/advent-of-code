@@ -1,3 +1,4 @@
+from collections import defaultdict
 import time
 from typing import Set, Tuple, List
 from aoc_utils import  runIt, PuzzleInput, Point, Grid, add, sub
@@ -16,91 +17,110 @@ input = PuzzleInput('input/day9.txt', testInput)
 
 lines = input.getInputLines(test=False)
 
-def parse_disk(s) -> List[List[int]]:
-    disk = [] # list of tuple (file id, file size, free space)
+def parse_disk(s) -> List[int]:
+    disk = [] 
     i = 0
     id = 0
     while i < len(s):
-        fileSize = s[i]
+        fileSize = int(s[i])
         i+=1
-        freeSpace = 0 if i == len(s) else s[i]
-        disk.append([id, int(fileSize), int(freeSpace)])
+        freeSpace = 0 if i == len(s) else int(s[i])
+        disk.extend([id for x in range(fileSize)])
+        disk.extend([-1 for x in range(freeSpace)])
         i+=1
         id+=1
     return disk
 
-def disk_to_str(disk) -> str:
-    s = ''
-    for b in disk:
-        for i in range(b[1]):
-            s += str(b[0])
-        for i in range(b[2]):
-            s += '.'
-    return s
 
-# index of the first block with free space
-def first_free(disk) -> int:
-    for i in range(len(disk)):
-        if disk[i][2] > 0: return i
-    return -1
-
-def last_file(disk) -> int:
-    for i in range(len(disk)-1, 0, -1):
-        if disk[i][1] > 0: return i
+def last_file(disk, before=-1) -> int:
+    if before == -1:
+        before = len(disk) - 1
+    for i in range(before, 0, -1):
+        if disk[i] >= 0: return i
     return -1
 
 def part1():
     disk = parse_disk(lines[0])
 
-    freeBlock = first_free(disk)
+    freeBlock = disk.index(-1)
     lastBlock = last_file(disk)
 
-    # print(disk)
-
-    print(disk_to_str(disk))
-    print(f'disk str len {len(disk_to_str(disk))}')
-    # print(f'Moving from {lastBlock} to {freeBlock}')
-
     while lastBlock > freeBlock and lastBlock != -1 and freeBlock != -1:
-        fileId = disk[lastBlock][0]
-        fileSize = disk[lastBlock][1]
+        disk[freeBlock] = disk[lastBlock]
+        disk[lastBlock] = -1
 
-        freeSpace = disk[freeBlock][2]
-        sizeDiff = min(fileSize, freeSpace)
-        movedBlockFreeSpace = freeSpace - sizeDiff
+        # more pythonic but 10x slower!
+        # freeBlock = next(iter((i for i in range(freeBlock + 1, lastBlock)    if disk[i] == -1)))
+        # lastBlock  = next(iter((i for i in range(lastBlock - 1, 0, -1) if disk[i] != -1)))
 
-        # print(f'Moving {fileSize} from {lastBlock} to {freeBlock}, can move {sizeDiff}')
-
-        disk[freeBlock][2] = 0
-
-        disk[lastBlock][1] = fileSize - sizeDiff
-        disk[lastBlock][2] = disk[lastBlock][2] + sizeDiff
-
-        movedFileBlock = [fileId, sizeDiff, movedBlockFreeSpace]
-        disk.insert(freeBlock+1, movedFileBlock)
-
-
-        freeBlock = first_free(disk)
-        if sizeDiff < fileSize:
-            lastBlock = last_file(disk)
-
-        # print(disk)
-        # print(disk_to_str(disk))
-
-    # print(f'*** Done')
-    # print(disk_to_str(disk))
+        while (disk[freeBlock] >= 0):
+            freeBlock += 1
+        while (disk[lastBlock] < 0):
+            lastBlock -= 1
 
     sum = 0
-    pos = 0
-    for block in disk:
-        for i in range(block[1]):
-            sum += (pos * block[0])
-            pos += 1
+    for i in range(len(disk)):
+        if (disk[i] != -1):
+            sum += (i * disk[i])
 
     print(f'sum: {sum}')
 
 
+def file_slices(diskStr) -> List[slice]:
+    slices = []
+    block = 0
+    for i, length in enumerate(diskStr):
+        if i%2 == 0:
+            slices.append(slice(block, block + int(length)))
+        block += int(length)
+    slices.reverse()
+    return slices
+
 def part2():
-    print(f'asdf')
+    disk = parse_disk(lines[0])
+    # fileIds = sorted(list(set(disk)))
+    # fileIds.remove(-1)
+    # fileIds.reverse()
+    # print(file_slices(lines[0]))
+    freeStarts = defaultdict(int)
+
+    for block in file_slices(lines[0]):
+        fileStart = block.start
+        fileEnd = block.stop
+        # while fileEnd < len(disk) and disk[fileEnd] == disk[fileStart]:
+        #     fileEnd += 1
+        fileLen = fileEnd - fileStart
+        freeStart = -1
+
+        freeRun = 0
+        for i in range(disk.index(-1, freeStarts[fileLen]), len(disk)):
+            freeStarts[fileLen] = i
+            if i >= fileStart:
+                break;
+            elif disk[i] == -1:
+                freeRun += 1
+                if freeRun == fileLen:
+                    freeStart = i + 1 - fileLen
+                    break
+            else:
+                freeRun = 0
+
+        # freeRange = [-1 for i in range(fileLen)]
+        # for fs in (i for i,e in enumerate(disk[:fileStart]) if e == -1):
+        #     if disk[fs:fs+fileLen] == freeRange:
+        #         freeStart = fs
+        #         break
+        if freeStart != -1 and freeStart < fileStart:
+            for i in range(freeStart, freeStart+fileLen):
+                disk[i] = disk[fileStart]
+            for i in range(fileStart, fileEnd):
+                disk[i] = -1
+
+    sum = 0
+    for i in range(len(disk)):
+        if (disk[i] != -1):
+            sum += (i * disk[i])
+
+    print(f'sum: {sum}')
 
 runIt(part1, part2)
