@@ -2,7 +2,7 @@ import { readInput, splitOnEmptyLines } from "./utils/file-utils";
 import { Point } from "./utils/point";
 import Matrix from "./utils/Matrix";
 
-const lines = readInput("day13", true);
+const lines = readInput("day13", false);
 
 function parseButton(button: string): Point {
   const steps = button.split(": ")[1];
@@ -87,7 +87,7 @@ function part2() {
     ]);
     const p = new Matrix(2, 1, [[prize.x], [prize.y]]);
     const n = ab.inverse().multiply(p);
-    console.log(`from matrix: n ${n.values} --- ${ab.inverse()}`);
+    console.log(`\nfrom matrix: n ${n.values} --- ${ab.inverse()}`);
 
     // a.y * na = prize.y - (b.y*nb)
     // na = (prize.y - (b.y * nb)) / a.y

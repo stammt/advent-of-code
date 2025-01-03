@@ -31,6 +31,18 @@ def get_input_section(lines:list[str], section:int) -> list[str]:
         return lines[blanks[len(blanks) - 1]+1:]
     return lines[blanks[section-1]+1 : blanks[section]]
     
+def split_on_empty_lines(lines:list[str]) -> list[list[str]]:
+    blanks = [i for i in range(len(lines)) if len(lines[i]) == 0]
+    nextSectionStart = 0
+    results = []
+    for b in blanks:
+        if nextSectionStart > len(lines): break
+        results.append([s for s in lines[nextSectionStart:b]])
+        nextSectionStart = b + 1
+    if nextSectionStart < len(lines) - 1:
+        results.append([s for s in lines[nextSectionStart:]])
+    return results
+
 # Run parts 1&2 and print timing info
 def runIt(part1, part2):
     p1start = time.perf_counter()
