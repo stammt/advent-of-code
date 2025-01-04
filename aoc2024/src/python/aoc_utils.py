@@ -89,10 +89,16 @@ def turn(dir:Point, turn_direction:str) -> Point:
 
 class Grid(dict):
     def __init__(self, lines) -> None:
-        self.size = (max(map(len, lines)), len(lines))
-        self.update({(x, y): val 
-                        for y, row in enumerate(lines) 
-                        for x, val in enumerate(row)})
+        if isinstance(lines, dict):
+            self.update(lines)
+            maxX = max(list(map(lambda k: k[0], self.keys())))
+            maxY = max(list(map(lambda k: k[1], self.keys())))
+            self.size = (maxX, maxY)
+        else:
+            self.update({(x, y): val 
+                            for y, row in enumerate(lines) 
+                            for x, val in enumerate(row)})
+            self.size = (max(map(len, lines)), len(lines))
 
     def isInRange(self, pos) -> bool:
         return pos[1] >= 0 and pos[1] < self.size[1] and pos[0] >= 0 and pos[0] < self.size[0]
