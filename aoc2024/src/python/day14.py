@@ -35,15 +35,7 @@ def parse_robot(line:str) -> tuple:
 
 def move(p: Point, steps: Point, size: Point) -> Point:
     x = (p[0] + steps[0]) % size[0]
-    # if x >= size[0]:
-    #     x = x % size[0]
-    # elif x < 0:
-    #     x = abs(x % size[0])
     y = (p[1] + steps[1]) % size[1]
-    # if y >= size[1]:
-    #     y = y % size[1]
-    # elif y < 0:
-    #     y = abs(y % size[1])
     return (x, y)
 
 def part1():
@@ -85,7 +77,6 @@ def part2():
                 ng[np].append(step)
         grid = ng
 
-        # find a line of len 10?
         for y in range(size[1]):
             for x in range(size[0]):
                 if find_block((x, y), grid):

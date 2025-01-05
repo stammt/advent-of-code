@@ -39,7 +39,7 @@ def split_on_empty_lines(lines:list[str]) -> list[list[str]]:
         if nextSectionStart > len(lines): break
         results.append([s for s in lines[nextSectionStart:b]])
         nextSectionStart = b + 1
-    if nextSectionStart < len(lines) - 1:
+    if nextSectionStart <= len(lines) - 1:
         results.append([s for s in lines[nextSectionStart:]])
     return results
 
@@ -71,6 +71,7 @@ def y(pos:Point) -> int:
     return pos[1]
 
 cardinal_directions = North, South, East, West = ((0, -1), (0, 1), (1, 0), (-1, 0))
+cardinal_directions_moves = {'^': North, 'v': South, '>': East, '<': West}
 ordinal_directions = NE, NW, SE, SW = ((1, -1), (-1, -1), (1, 1), (-1, 1))
 all_directions = cardinal_directions + ordinal_directions
 
