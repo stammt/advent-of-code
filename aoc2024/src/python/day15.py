@@ -72,11 +72,7 @@ def part1():
     print(f'gps: {gps}')
 
 def make_wide(s:str) -> str:
-    s = s.replace('#', '##')
-    s = s.replace('O', '[]')
-    s = s.replace('.', '..')
-    s = s.replace('@', '@.')
-    return s
+    return s.replace('#', '##').replace('O', '[]').replace('.', '..').replace('@', '@.')
 
 def wide_move(pos: set[Point], dir: Point, grid: Grid):
     # build a set of things to try to move at each step. If they can all move,
