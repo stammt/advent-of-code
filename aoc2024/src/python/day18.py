@@ -63,28 +63,28 @@ def part2():
     grid_size = 71
     falling = 1024
 
-    grid = Grid([['.' for x in range(grid_size)] for y in range(grid_size)])
-    for i in range(falling):
-        grid[splitInts(lines[i], ',')] = CORRUPTED
+    base_grid = Grid([['.' for x in range(grid_size)] for y in range(grid_size)])
 
     start = (0,0)
     finish = (grid_size-1, grid_size-1)
-    path = set(A_star(start, finish, lambda p: manhattan_distance(p, finish), grid))
 
-    # Drop bytes until we no longer get a path from A_star. Only recalculate the path if the
-    # byte would block our previous shortest path.
-    # Note - this would be more efficient to calculate ALL paths and only recalculate if any of 
-    # them get blocked...
-    for i in range(falling, len(lines)):
-        next_byte = splitInts(lines[i], ',')
-        grid[next_byte] = CORRUPTED
-        if next_byte in path:
-            path = set(A_star(start, finish, lambda p: manhattan_distance(p, finish), grid))
-            if len(path) == 0:
-                print(f'No more path after {next_byte}')
-                break
+    # we know up to 1024 is ok, so do a binary search from 1024 to the end to find where it's blocked
+    good = falling + 1
+    bad = len(lines)
+    while bad != (good + 1):
+        mid = (good + bad) // 2
+        
+        grid = Grid(base_grid)
+        for i in range(mid):
+            grid[splitInts(lines[i], ',')] = CORRUPTED
 
-    print(f'Done part 2')
+        path = set(A_star(start, finish, lambda p: manhattan_distance(p, finish), grid))
+        if len(path) == 0:
+            bad = mid
+        else:
+            good = mid
+        
+    print(f'No more path after {lines[bad-1]}')
 
 
     
