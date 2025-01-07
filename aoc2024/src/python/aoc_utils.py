@@ -1,6 +1,8 @@
 from enum import Enum
 import time
 from typing import Set, Tuple, Union
+from collections import defaultdict
+import sys
 
 class PuzzleInput:
     def __init__(self, fileName, testInput) -> None:
@@ -88,6 +90,9 @@ def turn(dir:Point, turn_direction:str) -> Point:
     (x, y) = dir
     return (y, -x) if turn_direction[0] in ('L', 'l') else (-y, x)
 
+def manhattan_distance(a: Point, b: Point) -> int:
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
 class Grid(dict):
     def __init__(self, lines) -> None:
         if isinstance(lines, dict):
@@ -130,3 +135,42 @@ class Grid(dict):
     def __str__(self):
         return self.to_string()
 
+def reconstruct_path(finish: Point, cameFrom: dict[Point, Point]) -> list[Point]:
+    path = [finish]
+    p = finish
+    while p in cameFrom:
+        p = cameFrom[p]
+        path.append(p)
+    path.reverse()
+    return path
+        
+def A_star(start, goal, h, grid: Grid, wall: str = '#') -> list[Point]:
+    openSet = {start} # TODO: use a priority queue or heap instead
+
+    cameFrom: dict[Point, Point] = dict()
+
+    # For node n, gScore[n] is the currently known cost of the cheapest path from start to n.
+    gScore: dict[Point, int]  = defaultdict(lambda: sys.maxsize)
+    gScore[start] = 0
+
+    # For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
+    # how cheap a path could be from start to finish if it goes through n.
+    fScore: dict[Point, int] = defaultdict(lambda: sys.maxsize)
+    fScore[start] = h(start)
+
+    while len(openSet) > 0:
+        current = min([n for n in openSet if n in fScore], key=lambda x: fScore[x])
+        if (current == goal):
+            return reconstruct_path(goal, cameFrom)
+        
+        openSet.remove(current)
+        for n in [add(current, d) for d in cardinal_directions if add(current, d) in grid and grid[add(current, d)] != wall]:
+            tentative_gScore = gScore[current] + 1 # distance is always 1 here
+            if tentative_gScore < gScore[n]:
+                cameFrom[n] = current
+                gScore[n] = tentative_gScore
+                fScore[n] = tentative_gScore + h(n)
+                if n not in openSet:
+                    openSet.add(n)
+
+    return []
