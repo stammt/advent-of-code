@@ -32,34 +32,34 @@ grid = Grid(lines)
 start = grid.find('S')
 finish = grid.find('E')
 
-def build_path() -> list[Point]:
-    path = [start]
+def build_path() -> dict[Point, int]:
+    path = {start: 0}
     print(f'start {start}, finish {finish}')
     p = start
+    steps = 0
     while p != finish:
         neighbors = [n for n in grid.neighbors(p, cardinal_directions) if (grid[n] == '.' or n == finish) and n not in path]
-        path.append(neighbors[0])
         p = neighbors[0]
+        steps += 1
+        path[p] = steps
 
     return path
 
 
 def find_cheats(steps, threshold = 0):
-    path = build_path()
+    dist = build_path()
 
     count = 0
-    dist = {p: i for i,p in enumerate(path)}
-    for i,p in enumerate(path):
+    for p in dist.keys():
         # find other nodes on path within {threshold} steps of this node
-        if i + threshold > len(path): break
-
-        candidates = filter(lambda x: manhattan_distance(p, x) <= steps, path[i+threshold+1:])
-        for c in candidates:
-            savings = dist[c] - dist[p] - manhattan_distance(p, c)
-            if (savings >= threshold):
-                count += 1
-
-
+        for x in range(p[0]-steps, p[0]+steps+1):
+            for y in range(p[1]-steps, p[1]+steps+1):
+                if (x,y) in dist:
+                    md = manhattan_distance(p, (x,y))
+                    if md <= steps:
+                        savings = dist[(x,y)] - dist[p] - md
+                        if (savings >= threshold):
+                            count += 1                        
     return count
 
 def part1():

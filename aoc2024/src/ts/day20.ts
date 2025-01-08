@@ -210,7 +210,7 @@ function part2() {
   let over100 = 0;
   cheats.forEach((cheats, stepsSaved) => {
     if (stepsSaved >= 100) {
-      console.log(`${cheats} save ${stepsSaved}`);
+      // console.log(`${cheats} save ${stepsSaved}`);
       over100 += cheats;
     }
   });
@@ -218,4 +218,6 @@ function part2() {
   console.log(`${over100} save at least 100`);
 }
 
+console.time();
 part2();
+console.timeEnd();
