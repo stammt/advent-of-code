@@ -1,6 +1,6 @@
 from enum import Enum
 import time
-from typing import Set, Tuple, Union
+from typing import Set, Tuple, Union, Iterable, Sequence
 from collections import defaultdict
 import sys
 
@@ -63,6 +63,9 @@ def runIt(part1, part2):
 def splitInts(line, separator=' ') -> Tuple[int, ...]:
     return tuple(map(int, line.strip().split(separator)))
 
+def sliding_window(sequence, n) -> Iterable[Sequence]:
+    """All length-n subsequences of sequence."""
+    return (sequence[i:i+n] for i in range(len(sequence) + 1 - n))
 
 # Point and direction helpers
 Point = Tuple[int, int]
