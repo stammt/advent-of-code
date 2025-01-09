@@ -116,11 +116,6 @@ def part2():
             presses = press_options(shortest_presses, (2, 0), dirpad)
         # print(f'L2 {goal}: {l2presses}')
 
-        # l2shortest = sorted(l2presses, key=len)[0]
-        # print(f'l2shortest for {goal}: {l2shortest}')
-        # l3presses = press_options(l2presses, (2, 0), dirpad)
-        # print(f'L3 {goal}: {l3presses}')
-
         l3shortest = sorted(presses, key=len)[0]
         print(f'l3shortest for {goal}: {len(l3shortest)} {l3shortest}')
         complexity += (len(l3shortest) * int(goal[:-1])) 
