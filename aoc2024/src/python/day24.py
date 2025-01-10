@@ -86,11 +86,11 @@ def part1():
                 a = inputs[gate[0]]
                 b = inputs[gate[2]]
                 if gate[1] == 'AND':
-                    inputs[k] = 1 if a == 1 and b == 1 else 0
+                    inputs[k] = a & b
                 elif gate[1] == 'OR':
-                    inputs[k] = 1 if a == 1 or b == 1 else 0
+                    inputs[k] = a | b
                 elif gate[1] == 'XOR':
-                    inputs[k] = 1 if a != b else 0
+                    inputs[k] = a ^ b
                 gates.pop(k)
 
     zees = ''.join(map(lambda x: str(inputs[x]), reversed(sorted([k for k in inputs.keys() if k.startswith('z')]))))
