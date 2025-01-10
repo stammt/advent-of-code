@@ -19,16 +19,10 @@ input = PuzzleInput('input/day22.txt', testInput)
 lines = input.getInputLines(test=False)
 
 
-def mix(secret: int, value: int) -> int:
-    return secret ^ value
-
-def prune(secret: int) -> int:
-    return secret % 16777216
-
 def next_secret(secret: int) -> int:
-    secret = prune(mix(secret, secret * 64))
-    secret = prune(mix(secret, secret // 32))
-    secret = prune(mix(secret, secret * 2048))
+    secret ^= (secret *   64) % 16777216
+    secret ^= (secret //  32) % 16777216
+    secret ^= (secret * 2048) % 16777216
     return secret
 
 def part1():
@@ -41,38 +35,22 @@ def part1():
     print(f'sum: {sum}')
 
 def part2():
-    all_prices = []
-    testseq = (-2,2,-1,-1)
-
     sequence_to_prices: dict[tuple[int], int] = defaultdict(int)
-    best_sequence = tuple()
-    best_sequence_price = -1
 
     for line in lines:
-        secret = int(line)
-        prices = [secret%10]
-        price_diffs = []
-        seen_seqs = set()
+        secrets = [int(line)]
         for i in range(2000):
-            secret = next_secret(secret)
-            prices.append(secret%10)
-            price_diffs.append(prices[i+1] - prices[i])
-            if i >= 3:
-                seq = (price_diffs[i-3], price_diffs[i-2], price_diffs[i-1], price_diffs[i])
-                if seq not in seen_seqs:
-                    sequence_to_prices[seq] += prices[i+1]
-                    if sequence_to_prices[seq] > best_sequence_price:
-                        best_sequence_price = sequence_to_prices[seq]
-                        best_sequence = seq
-                    seen_seqs.add(seq)
-        all_prices.append(prices)
+            secrets.append(next_secret(secrets[i]))
+        prices = list(map(lambda x: x%10, secrets))
+        price_diffs = [prices[i] - prices[i-1] for i in range(1, 2001)]
+        seen_seqs = set()
+        for i in range(3, 2000):
+            seq = tuple(price_diffs[i-3:i+1])
+            if seq not in seen_seqs:
+                sequence_to_prices[seq] += prices[i+1]
+                seen_seqs.add(seq)
 
-    # for k,v in sequence_to_prices.items():
-    #     if v > best_sequence_price:
-    #         print(f'Found new best {k} for price {v}')
-    #         best_sequence = k
-    #         best_sequence_price = v
-    
-    print(f'Best price {best_sequence_price} from {best_sequence}')
+    best_sequence_price = max(sequence_to_prices.values())
+    print(f'Best price {best_sequence_price}')
 
 runIt(part1, part2)
