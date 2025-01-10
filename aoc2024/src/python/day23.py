@@ -60,9 +60,9 @@ def part1():
     # for each of their connections b
     # find b's connections c that are connected back to a
     # add to the result set as a sorted tuple to filter out dupes
-    results = {tuple(sorted([a, b, c])) for a in filter(lambda k: k[0] == 't', net.keys())
+    results = {frozenset([a, b, c]) for a in filter(lambda k: k[0] == 't', net.keys())
                for b in net[a]
-               for c in filter(lambda x: a in net[x], net[b])}
+               for c in net[b] if c in net[a]}
 
     print(f'Count {len(results)}')
 
@@ -78,9 +78,9 @@ def expand_group(a: str, group: set[str], net: dict) -> set[str]:
 def part2():
     net = build_connections()
 
-    groups = {tuple(sorted(expand_group(a, {a}, net))) for a in net.keys()}
+    groups = {frozenset(expand_group(a, {a}, net)) for a in net.keys()}
 
     biggest = max(groups, key=len)
-    print(f'Biggest is {len(biggest)}: {biggest}')
+    print(f'Biggest is {len(biggest)}: {sorted(biggest)}')
 
 runIt(part1, part2)
