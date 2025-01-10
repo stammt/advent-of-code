@@ -11,8 +11,8 @@ import numpy
 
 
 testInput = r"""1
-10
-100
+2
+3
 2024"""
 
 input = PuzzleInput('input/day22.txt', testInput)
@@ -41,6 +41,38 @@ def part1():
     print(f'sum: {sum}')
 
 def part2():
-    print('nyi')
+    all_prices = []
+    testseq = (-2,2,-1,-1)
+
+    sequence_to_prices: dict[tuple[int], int] = defaultdict(int)
+    best_sequence = tuple()
+    best_sequence_price = -1
+
+    for line in lines:
+        secret = int(line)
+        prices = [secret%10]
+        price_diffs = []
+        seen_seqs = set()
+        for i in range(2000):
+            secret = next_secret(secret)
+            prices.append(secret%10)
+            price_diffs.append(prices[i+1] - prices[i])
+            if i >= 3:
+                seq = (price_diffs[i-3], price_diffs[i-2], price_diffs[i-1], price_diffs[i])
+                if seq not in seen_seqs:
+                    sequence_to_prices[seq] += prices[i+1]
+                    if sequence_to_prices[seq] > best_sequence_price:
+                        best_sequence_price = sequence_to_prices[seq]
+                        best_sequence = seq
+                    seen_seqs.add(seq)
+        all_prices.append(prices)
+
+    # for k,v in sequence_to_prices.items():
+    #     if v > best_sequence_price:
+    #         print(f'Found new best {k} for price {v}')
+    #         best_sequence = k
+    #         best_sequence_price = v
+    
+    print(f'Best price {best_sequence_price} from {best_sequence}')
 
 runIt(part1, part2)
