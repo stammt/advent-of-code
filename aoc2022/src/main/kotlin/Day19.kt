@@ -6,7 +6,7 @@ import kotlin.math.min
 
 fun main(args: Array<String>) {
 //    val input = File("/Users/stammt/Documents/2022aoc/day19input.txt").readLines()
-    val input = File("/Users/stammt/Documents/2022aoc/day19sample.txt").readLines()
+    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day19sample.txt").readLines()
     day19part1(input)
 }
 
