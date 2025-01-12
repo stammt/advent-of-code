@@ -5,191 +5,186 @@ import kotlin.math.max
 import kotlin.math.min
 
 fun main(args: Array<String>) {
-    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day19sample.txt").readLines()
+    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day19input.txt").readLines()
     day19part1(input)
 }
 
+var stateCacheHits = 0
 fun day19part1(input: List<String>) {
     val blueprints = parseBlueprints(input)
 
-    var initialState = MiningState(emptyMap(), mapOf("ore" to 1), 24)
+    val initialState = MiningState(Resources(0, 0, 0, 0),
+        Resources(1, 0, 0, 0),
+        24)
 
     var qualityTotal = 0
     var count = 0
     for (i in blueprints.indices) {
-        val states = mutableListOf(initialState)
-        val endStates = mutableListOf<MiningState>()
-        while (states.isNotEmpty()) {
-            val state = states.removeAt(0)
-            val nextStates = countDown(state, blueprints[i])
-            for (ns in nextStates) {
-                if (ns.timeRemaining == 0) {
-                    endStates.add(ns)
-                } else {
-                    states.add(ns)
-                }
-            }
-            count++
-        }
+        stateCache.clear()
+        count = 0
 
-        var geodes = -1
-        for (endState in endStates) {
-            if (endState.resources.containsKey("geode") && endState.resources["geode"]!! > geodes) {
-                geodes = endState.resources["geode"]!!
-            }
-        }
-        val quality = (i+1) * geodes
+        val endState = countDown(initialState, blueprints[i])
+
+        val quality = (i + 1) * endState.resources.geode
         qualityTotal += quality
-        println("blueprint $i has $geodes (quality $quality)")
+        println("\nblueprint ${i+1} has ${endState.resources.geode} (quality $quality)\n")
     }
 
     // 977 too low
     println("quality total $qualityTotal")
 }
 
-fun countDown(state: MiningState, blueprint: Blueprint): List<MiningState> {
+val stateCache = mutableMapOf<Pair<MiningState, Blueprint>, MiningState>()
+fun countDown(state: MiningState, blueprint: Blueprint): MiningState {
+//    println("time remaining ${state.timeRemaining}")
+    if (stateCache.containsKey(state to blueprint)) {
+//        println("*** state cache hit for $state")
+        stateCacheHits++
+        return stateCache[state to blueprint]!!
+    }
     // what can we do with our resources?
     val nextStates = mutableListOf<MiningState>()
 
     // option 1: do nothing, just collect more resources
-    nextStates.add(MiningState(mine(state.resources, state.robots), state.robots, state.timeRemaining - 1))
+    nextStates.add(MiningState(state.resources.add(state.robots), state.robots, state.timeRemaining - 1))
 
     // option 2: see what we can build
-    val buildOptions = build(state, blueprint)
-    val priorities = listOf("geode", "obsidian", "clay", "ore")
-    for (p in priorities) {
-        if (p == "geode" && state.timeRemaining < 2) continue
-        if (p == "obsidian" && state.timeRemaining < 3) continue
-        if (p == "clay" && state.timeRemaining < 4) continue
-
-//        for ((type, remainingResources) in buildOptions) {
-        if (buildOptions.containsKey(p)) {
-            val robots = state.robots.toMutableMap()
-            robots[p] = robots[p]?.plus(1) ?: 1
-            nextStates.add(MiningState(mine(buildOptions[p]!!, state.robots), robots, state.timeRemaining - 1))
-        }
+    if (state.robots.ore < blueprint.maxRobots.ore && state.resources.canBuild(blueprint.oreRobot)) {
+        val nextResources = state.resources.remove(blueprint.oreRobot).add(state.robots)
+        nextStates.add(MiningState(nextResources,
+            state.robots.add(Resources(1, 0, 0, 0)),
+            state.timeRemaining - 1))
+    }
+    if (state.robots.clay < blueprint.maxRobots.clay && state.resources.canBuild(blueprint.clayRobot)) {
+        val nextResources = state.resources.remove(blueprint.clayRobot).add(state.robots)
+        nextStates.add(MiningState(nextResources,
+            state.robots.add(Resources(0, 1, 0, 0)),
+            state.timeRemaining - 1))
+    }
+    if (state.robots.obsidian < blueprint.maxRobots.obsidian && state.resources.canBuild(blueprint.obsidianRobot)) {
+        val nextResources = state.resources.remove(blueprint.obsidianRobot).add(state.robots)
+        nextStates.add(MiningState(nextResources,
+            state.robots.add(Resources(0, 0, 1, 0)),
+            state.timeRemaining - 1))
+    }
+    if (state.resources.canBuild(blueprint.geodeRobot)) {
+        val nextResources = state.resources.remove(blueprint.geodeRobot).add(state.robots)
+        nextStates.add(MiningState(nextResources,
+            state.robots.add(Resources(0, 0, 0, 1)),
+            state.timeRemaining - 1))
     }
 
+    if (state.timeRemaining == 1) {
+        return maxGeodes(nextStates)
+    }
+
+    val endStates = mutableListOf<MiningState>()
+    for (branch in nextStates) {
+        endStates.add(countDown(branch, blueprint))
+    }
+    val result = maxGeodes(endStates)
+
+    stateCache[state to blueprint] = result
 //    println("${state.timeRemaining} : ${blueprint.id} : $state produced ${nextStates.size} states: $nextStates")
-    return nextStates
+    return result
 }
 
-fun mine(resources: Map<String, Int>, robots: Map<String, Int>): Map<String, Int> {
-    val updatedResources = mutableMapOf<String, Int>().withDefault{ _ -> 0 }
-    for ((resource, count) in robots) {
-        updatedResources[resource] = resources[resource]?.plus(count) ?: count
-    }
-    return updatedResources
+fun maxGeodes(states: List<MiningState>): MiningState {
+    return states.maxByOrNull { (T) -> T.geode }!!
 }
 
-fun build(state: MiningState, blueprint: Blueprint) : Map<String, Map<String, Int>> {
-    // TODO: take time remaining and use to optimize; e.g. don't built more ore bots when only a few minutes left
+data class MiningState(val resources: Resources, val robots: Resources, val timeRemaining: Int)
 
-    // don't create a robot if it wouldn't help because we already have the maximum yield per minute
-    // e.g. the most ore we can use to build another bot is 8, so stop making ore bots if we already have 8
-
-
-    // map of robot type to remaining resources after building that type
-    val buildOptions = mutableMapOf<String, Map<String, Int>>()
-    // try to build in order of most valuable first
-    for (type in blueprint.robots.keys) {
-        val shouldBuild = !state.robots.containsKey(type) || !blueprint.maxRobots.containsKey(type) || state.robots[type]!! < blueprint.maxRobots[type]!!
-        if (!shouldBuild) {
-            if (type != "ore") {
-                println("Skipping building $type, already have ${state.robots[type]}")
-            }
-            continue
-        }
-
-        val robot = blueprint.robots[type]!!
-        var canBuild = true
-        val remainingResources = state.resources.toMutableMap()
-        for ((resource, count) in robot.costs) {
-            if (!state.resources.containsKey(resource)) {
-                canBuild = false
-                break
-            }
-            if (state.resources[resource]!! < count) {
-                canBuild = false
-                break
-            }
-            remainingResources[resource] = state.resources[resource]!! - count
-        }
-        if (canBuild) {
-            buildOptions[type] = remainingResources
-        }
+data class Resources(val ore: Int, val clay: Int, val obsidian: Int, val geode: Int) {
+    fun add(other: Resources): Resources {
+        return Resources(ore + other.ore, clay + other.clay, obsidian + other.obsidian, geode + other.geode)
     }
 
-    return buildOptions
+    fun remove(other: Resources): Resources {
+        return Resources(ore - other.ore, clay - other.clay, obsidian - other.obsidian, geode - other.geode)
+    }
+
+    fun canBuild(robot: Resources): Boolean {
+        return robot.ore <= ore
+                && robot.clay <= clay
+                && robot.obsidian <= obsidian
+                && robot.geode <= geode
+    }
+
+    fun times(t: Int): Resources {
+        return Resources(ore * t, clay * t, obsidian * t, geode * t)
+    }
 }
 
-data class MiningState(val resources: Map<String, Int>, val robots: Map<String, Int>, val timeRemaining: Int)
+data class Blueprint(
+    val id: Int,
+    val oreRobot: Resources,
+    val clayRobot: Resources,
+    val obsidianRobot: Resources,
+    val geodeRobot: Resources,
+    val maxRobots: Resources
+)
 
-data class Blueprint(val id: Int, val robots: Map<String, Robot>, val maxRobots: Map<String, Int>) {
-    /**
-     * ore -> clay -> obsidian -> geode
-     * if we don't have a clay bot
-     * >> If we can afford another ore bot:
-     * >>>> would it be faster to get a clay bot by building another ore bot? If yes, do it.
-     * If we have a clay bot but don't have an obsidian bot
-     * >> if we can afford another ore or clay bot:
-     * >>>> would it be faster to get an obsidian bot by building another ore or clay bot?
-     * >> ...
-     *
-     * need to know at each step:
-     * >> how long will it take to built a(nother) geode bot?
-     * >> what bots can we afford?
-     * >>>> If any, will they make it faster to build another geode bot?
-     * >>>> It might be backtracking e.g. build another clay bot to build another obsidian bot faster
-     * >>>> so, what bot will make it faster to build another geode bot? And then what bot would make
-     * >>>> that faster, etc.
-     *
-     *
-     */
-
-}
-
-data class Robot(val resource: String, val costs: Map<String, Int>) {}
-
-
-fun parseBlueprints(input: List<String>) : List<Blueprint> {
+fun parseBlueprints(input: List<String>): List<Blueprint> {
     val regex = """Each (\w+) robot costs (\d+) (\w+)""".toRegex()
     val andRegex = """and (\d+) (\w+)""".toRegex()
     val blueprints = mutableListOf<Blueprint>()
 
     for (id in input.indices) {
         val robotDescriptions = input[id].split(": ")[1].split(". ")
-        val robots = mutableMapOf<String, Robot>()
+        var oreRobot: Resources? = null
+        var clayRobot: Resources? = null
+        var obsidianRobot: Resources? = null
+        var geodeRobot: Resources? = null
+
+        var maxOre = 0
+        var maxClay = 0
+        var maxObsidian = 0
+        var maxGeode = Int.MAX_VALUE
         for (r in robotDescriptions) {
             println("Parsing robot <$r>")
-            val costs = mutableMapOf<String, Int>()
+            var ore = 0
+            var clay = 0
+            var obsidian = 0
+            var geode = 0
 
             val matchResult = regex.find(r)
             val (resource, cost, costResource) = matchResult!!.destructured
-            costs[costResource] = cost.toInt()
+            when (costResource) {
+                "ore" -> ore = cost.toInt()
+                "clay" -> clay = cost.toInt()
+                "obsidian" -> obsidian = cost.toInt()
+                "geode" -> geode = cost.toInt()
+            }
+
             val secondCostResult = andRegex.find(r)
             if (secondCostResult != null) {
                 val (cost2, costResource2) = secondCostResult!!.destructured
-                costs[costResource2] = cost2.toInt()
+                when (costResource2) {
+                    "ore" -> ore += cost2.toInt()
+                    "clay" -> clay += cost2.toInt()
+                    "obsidian" -> obsidian += cost2.toInt()
+                    "geode" -> geode += cost2.toInt()
+                }
             }
-
-            robots[resource] = Robot(resource, costs)
+            val robotCost = Resources(ore, clay, obsidian, geode)
+            when (resource) {
+                "ore" -> oreRobot = robotCost
+                "clay" -> clayRobot = robotCost
+                "obsidian" -> obsidianRobot = robotCost
+                "geode" -> geodeRobot = robotCost
+            }
+            maxOre = max(maxOre, robotCost.ore)
+            maxClay = max(maxClay, robotCost.clay)
+            maxObsidian = max(maxObsidian, robotCost.obsidian)
         }
 
         // the max number of each kind of robot to make, any more than that and you
         // can't spend enough to keep up.
-        val maxRobots = mutableMapOf<String, Int>()
-        for ((type, robot)  in robots) {
-            for ((resource, amount) in robot.costs) {
-                if (type != resource && (!maxRobots.containsKey(resource) || maxRobots[resource]!! < amount)) {
-                    maxRobots[resource] = amount
-                }
-            }
-        }
-
-        println("Parsed robots: $robots")
-        println("Parsed maxRobots: $maxRobots")
-        blueprints.add(Blueprint(id+1, robots, maxRobots))
+        val maxRobots = Resources(maxOre, maxClay, maxObsidian, maxGeode)
+        val bp = Blueprint(id+1, oreRobot!!, clayRobot!!, obsidianRobot!!, geodeRobot!!, maxRobots)
+        println("Parsed robots: $bp")
+        blueprints.add(bp)
     }
 
     return blueprints
