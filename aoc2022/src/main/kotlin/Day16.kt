@@ -5,331 +5,98 @@ import kotlin.math.max
 import kotlin.math.min
 
 fun main(args: Array<String>) {
-    val input = File("/Users/stammt/Documents/2022aoc/day16input.txt").readLines()
-//    val input = File("/Users/stammt/Documents/2022aoc/day16sample.txt").readLines()
-    day16part2(input)
+    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day16input.txt").readLines()
+    day16part1(input)
 }
 
-fun day16part2(input: List<String>) {
-    val valves = parseValves(input)
-    val distances = buildDistances(valves)
-    val time = 30
+data class Valve(val rate: Int, val tunnels: List<String>)
 
-    println("Distances $distances")
-    val nonZeroValves = valves.filter { it.value.rate > 0 }
+data class ValveState(val loc: String, val flow: Int, val openValves: Set<String>, val timeRemaining: Int)
 
-    // simple heuristic - always do the top performing valves first. Split the
-    // non-zero list in half, get all combinations of each half but always do
-    // the top half first.
-
-    val nonZeroValvesSorted = nonZeroValves.values.sortedByDescending { it.rate }
-//    val bestCount = nonZeroValves.size / 2
-//    val worstCount = nonZeroValves.size - bestCount
-    val bestCount = nonZeroValves.size -4
-    val worstCount = 4
-    val bestValves = nonZeroValvesSorted.take(bestCount)
-    val worstValves = nonZeroValvesSorted.takeLast(worstCount)
-
-//    println("Best: $bestValves")
-//    println("Worst: $worstValves")
-
-    println("Creating best combinations")
-    val bestValvesCombinations = mutableListOf<List<String>>()
-    allCombinations(listOf(), bestValves, distances, bestValvesCombinations)
-
-    println("Creating worst combinations")
-    val worstValvesCombinations = mutableListOf<List<String>>()
-    allCombinations(listOf(), worstValves, distances, worstValvesCombinations)
-
-//    println("Best combinations size: ${bestValvesCombinations}")
-//    println("Worst combinations size: ${worstValvesCombinations}")
-
-    var bestScore = 0
-    var bestMePath = listOf<String>()
-    var bestElephantPath = listOf<String>()
-    for (best in bestValvesCombinations) {
-        for (worst in worstValvesCombinations) {
-            val path = best + worst
-
-            // alternate valves for me and the elephant
-            val mePath = mutableListOf<String>("AA")
-            val elephantPath = mutableListOf<String>("AA")
-            var i = 0
-            do {
-                mePath += path[i]
-                i++
-                if (i < path.size) {
-                    elephantPath += path[i]
-                    i++
-                }
-            } while (i < path.size)
-
-
-            val total = scoreForTwo(mePath, elephantPath, valves, distances)
-            println("$total for me $mePath and elephant $elephantPath")
-
-            if (total > bestScore) {
-                bestScore = total
-                bestMePath = mePath
-                bestElephantPath = elephantPath
-            }
-        }
-    }
-
-    // 2963 is too low
-    println("Part 2 total: $bestScore for $bestMePath and $bestElephantPath")
-}
-
+var allValvesByFlowRateDescnding: List<String> = listOf()
+val valveStateCache = mutableMapOf<ValveState, Int>()
+var maxFlowSoFar = 0
 
 fun day16part1(input: List<String>) {
     val valves = parseValves(input)
-    val distances = buildDistances(valves)
     val time = 30
 
-    println("Distances $distances")
-    val nonZeroValves = valves.filter { it.value.rate > 0 }
-    val result = mutableListOf<Int>()
+    val initialState = ValveState("AA", 0, setOf("AA"), time)
+    allValvesByFlowRateDescnding = valves.keys
+        .sortedByDescending { v -> valves[v]!!.rate }
 
-    // simple heuristic - always do the top performing valves first. Split the
-    // non-zero list in half, get all combinations of each half but always do
-    // the top half first.
+    val flow = countDown(initialState, setOf("AA"), valves)
 
-    val nonZeroValvesSorted = nonZeroValves.values.sortedByDescending { it.rate }
-//    val bestCount = nonZeroValves.size / 2
-//    val worstCount = nonZeroValves.size - bestCount
-    val bestCount = nonZeroValves.size -5
-    val worstCount = 5
-    val bestValves = nonZeroValvesSorted.take(bestCount)
-    val worstValves = nonZeroValvesSorted.takeLast(worstCount)
+    println("max flow: $flow")
+}
 
-    println("Best: $bestValves")
-    println("Worst: $worstValves")
+fun countDown(state: ValveState, visited: Set<String>, valves: Map<String, Valve>): Int {
+    if (valveStateCache.containsKey(state)) {
+        return valveStateCache[state]!!
+    }
 
-    val bestValvesCombinations = mutableListOf<List<String>>()
-    allCombinations(listOf("AA"), bestValves, distances, bestValvesCombinations)
-    val worstValvesCombinations = mutableListOf<List<String>>()
-    allCombinations(listOf(), worstValves, distances, worstValvesCombinations)
+    // Ran out of time
+    if (state.timeRemaining == 1) {
+        return state.flow
+    }
 
-    println("Best combinations size: ${bestValvesCombinations}")
-    println("Worst combinations size: ${worstValvesCombinations}")
+    // All valves are open, just let them flow
+    if (state.openValves.size == valves.size) {
+        println("all valves are open with ${state.timeRemaining} left")
+        return state.flow
+    }
 
-    var bestScore = 0
-    var bestPath = listOf<String>()
-    for (best in bestValvesCombinations) {
-        for (worst in worstValvesCombinations) {
-            val path = best + worst
-            val total = score(path, valves, distances)
+    // If we can't possibly beat the current best flow, return
+    if (maxFlowSoFar > bestPotentialResult(state, valves)) {
+        return 0
+    }
 
-            if (total > bestScore) {
-                bestScore = total
-                bestPath = path
-            }
+    val v = valves[state.loc]!!
+    var maxFlow = 0
+
+    // option 1: open this valve
+    if (!state.openValves.contains(state.loc)) {
+        val openValves = state.openValves.toMutableSet()
+        openValves.add(state.loc)
+        val updatedFlow = state.flow + (v.rate * (state.timeRemaining - 1))
+        val nextState = ValveState(state.loc, updatedFlow, openValves, state.timeRemaining - 1)
+        maxFlow = max(maxFlow, countDown(nextState, setOf(), valves))
+    }
+
+    // option 2: go down a tunnel
+    for (t in v.tunnels) {
+        // don't loop around if we haven't opened a valve since the last time we were here
+        if (!visited.contains(t)) {
+            val nextVisited = visited.toMutableSet()
+            nextVisited.add(t)
+            maxFlow =
+                max(maxFlow, countDown(ValveState(t, state.flow, state.openValves, state.timeRemaining - 1), nextVisited, valves))
         }
+
     }
 
-    println("Part 1 total: $bestScore for $bestPath")
+    maxFlowSoFar = max(maxFlowSoFar, maxFlow)
+
+    return maxFlow
 }
 
-fun score(path: List<String>, valves: Map<String, Valve>, distances: Map<Pair<String, String>, List<String>>) : Int {
-    val time = 30
-    var minute = 0
-    var flow = 0
-    var total = 0
-    for (i in 1 until path.size) {
-        val distance = distances[path[i-1] to path[i]]!!.size
-        val steps = min((distance + 1), time - minute)
-        minute += steps
-        total += (flow * steps)
-        flow += valves[path[i]]!!.rate
+// What is the best possible result from this state, assuming we could open the valves with
+// the max flow within one step from each other (which probably won't happen!)
+fun bestPotentialResult(state: ValveState, valves: Map<String, Valve>): Int {
+    // Valves that are not open yet, sorted by flow rate descending
+    val openValvesDescending = allValvesByFlowRateDescnding
+        .filter { v -> !state.openValves.contains(v) }
+    var bestFlow = 0
+    var time = state.timeRemaining
+    var nextValveIndex = 0
+    while (time > 0 && nextValveIndex < openValvesDescending.size) {
+        val nextValve = valves[openValvesDescending[nextValveIndex]]!!
+        bestFlow += (nextValve.rate * (time - 1))
+        time -= 2 // open this valve and go through a tunnel
+        nextValveIndex += 1
     }
-    if (minute < time) {
-        total += ((time - minute) * flow)
-    }
-
-    return total
+    return state.flow + bestFlow
 }
-
-fun scoreForTwo(mePath: List<String>, elephantPath: List<String>, valves: Map<String, Valve>, distances: Map<Pair<String, String>, List<String>>) : Int {
-    val time = 26
-//    var minute = 1
-    var flow = 0
-    var total = 0
-
-    // where we are in the path
-    var mePathIndex = 1
-    var elephantPathIndex = 1
-
-    // minutes left until we reach the next valve and open it
-    var meStepTimeRemaining = distances["AA" to mePath[mePathIndex]]!!.size
-    var elephantStepTimeRemaining = distances["AA" to elephantPath[elephantPathIndex]]!!.size
-
-    for (minute in 1..time) {
-//        println("Minute $minute flow is $flow")
-        total += flow
-
-        if (meStepTimeRemaining == 0) {
-            if (mePathIndex < mePath.size) {
-                val meValve = mePath[mePathIndex]!!
-//                println("Me opening valve $meValve")
-                flow += valves[meValve]!!.rate
-                mePathIndex++
-                if (mePathIndex < mePath.size) {
-                    meStepTimeRemaining = distances[meValve to mePath[mePathIndex]]!!.size
-                }
-            }
-        } else {
-            meStepTimeRemaining--
-        }
-//        meStepTimeRemaining = max(0, meStepTimeRemaining - 1)
-
-        if (elephantStepTimeRemaining == 0) {
-            if (elephantPathIndex < elephantPath.size) {
-                val elephantValve = elephantPath[elephantPathIndex]!!
-//                println("Elephant opening valve $elephantValve")
-                flow += valves[elephantValve]!!.rate
-                elephantPathIndex++
-                if (elephantPathIndex < elephantPath.size) {
-                    elephantStepTimeRemaining =
-                        distances[elephantValve to elephantPath[elephantPathIndex]]!!.size
-                }
-            }
-        } else {
-            elephantStepTimeRemaining--
-        }
-//        elephantStepTimeRemaining = max(0, elephantStepTimeRemaining - 1)
-
-//        println("After minute $minute: total $total, flow $flow : $mePathIndex ($meStepTimeRemaining) $elephantPathIndex ($elephantStepTimeRemaining)")
-    }
-
-    return total
-}
-
-
-fun allCombinations(path: List<String>, valves: List<Valve>, distances: Map<Pair<String, String>, List<String>>, results: MutableList<List<String>>) {
-    val remaining = valves.toMutableList()
-    remaining.removeIf { path.contains(it.name) }
-
-    if (remaining.isEmpty()) {
-        results.add(path)
-    } else {
-        for (valve in remaining) {
-            val appended = path.toMutableList()
-            appended.add(valve.name)
-            allCombinations(appended, valves, distances, results)
-        }
-    }
-}
-
-
-
-fun getNextBestValve(current: String, time: Int, openValves: Set<String>, valves: Map<String, Valve>, distances: Map<Pair<String, String>, List<String>>) : List<String> {
-    val closedValves = valves.filter { it.value.rate > 0 && !openValves.contains(it.key) }
-    var bestScore = 0
-    var bestValve = listOf<String>()
-    for (valve in closedValves) {
-        val distance = distances[current to valve.key]!!
-        val score = (time - distance.size - 1) * valve.value.rate
-//        println("checking $current to ${valve.key} : $score from $distance at $time")
-        if (score > bestScore) {
-            bestScore = score
-            bestValve = distance
-        }
-    }
-//    println("Best valve from $current is $bestValve")
-    return bestValve
-}
-
-data class ValveResult(var result: Int) {
-    fun recordTotal(total: Int) {
-        result = max(result, total)
-    }
-}
-
-fun buildPaths(path: List<String>,
-               total: Int,
-               time: Int,
-               flowPerMinute: Int,
-               valves: Map<String, Valve>,
-               distances: Map<Pair<String, String>, List<String>>,
-               totals: MutableList<Int>) {
-    if (time == 0) {
-//        println("Adding total $total for $path")
-        totals.add(total)
-    } else if (path.containsAll(valves.keys)) {
-        buildPaths(path, total + flowPerMinute, time - 1, flowPerMinute, valves, distances, totals)
-    } else {
-        for (node in valves) {
-            if (!path.contains(node.key)) {
-                val moveTime = distances[path.last() to node.key]!!.size
-
-                // If we'll take too long, cap it at the remaining time. Otherwise add 1 for opening the valve.
-                val elapsedTime = if (moveTime < time) moveTime + 1 else time
-
-//                println("Elapsed time from $path to ${node.key} is $elapsedTime")
-                buildPaths(path + node.key, total + (flowPerMinute * elapsedTime), time - elapsedTime,
-                    flowPerMinute + node.value.rate,
-                                valves, distances, totals)
-            }
-        }
-    }
-}
-
-// figure out the distances between each non-zero valve, and from AA to all non-zero valves
-fun buildDistances(valves: Map<String, Valve>) : Map<Pair<String, String>, List<String>> {
-    val paths = mutableMapOf<Pair<String, String>, List<String>>()
-    for (valve in valves) {
-        val d = dijkstra(valve.key, valves)
-        for (key in d.keys) {
-            paths[key] = d[key]!!
-        }
-    }
-    return paths
-}
-
-fun dijkstra(start: String, valves: Map<String, Valve>) : Map<Pair<String, String>, List<String>> {
-    val distances = mutableMapOf<String, Int>()
-    val prev = mutableMapOf<String, String>()
-    val q = valves.keys.toMutableList()
-    distances[start] = 0
-
-    do {
-        val u = q.minBy { if (!distances.containsKey(it)) Int.MAX_VALUE else distances[it]!! }
-        q.remove(u)
-        val uValve = valves[u]!!
-        for (neighbor in uValve.tunnels) {
-            val alt = distances[u]!! + 1
-            if (!distances.containsKey(neighbor) || alt < distances[neighbor]!!) {
-                distances[neighbor] = alt
-                prev[neighbor] = u
-            }
-        }
-    } while (q.isNotEmpty())
-
-    val paths = mutableMapOf<Pair<String, String>, List<String>>()
-    for (valve in valves) {
-        if (valve.key != start) {
-            val path = mutableListOf<String>(valve.key)
-            var v = valve.key
-            while (prev.containsKey(v) && prev[v] != start) {
-                path.add(0, prev[v]!!)
-                v = prev[v]!!
-            }
-            paths[start to valve.key] = path
-        }
-    }
-    return paths
-}
-
-
-
-data class Valve(val name: String, val rate: Int, val tunnels: List<String>) {
-//    var open = false
-}
-
-fun eligibleValvesRemaining(openValves: Set<String>, valves: Map<String, Valve>) : Boolean {
-    return valves.filter { !openValves.contains(it.key) && it.value.rate > 0 }.isNotEmpty()
-}
-
 
 fun parseValves(input: List<String>) : Map<String, Valve> {
     val valves = mutableMapOf<String, Valve>()
@@ -339,12 +106,7 @@ fun parseValves(input: List<String>) : Map<String, Valve> {
         val name = parts[0].substring("Valve ".length).split(" ")[0]
         val rate = parts[0].split("=")[1].toInt()
         val tunnels = parts[1].split(", ").map { it.takeLast(2)}
-        valves[name] = Valve(name, rate, tunnels)
-    }
-
-    println("Parsed valves:")
-    for (v in valves) {
-        println(v)
+        valves[name] = Valve(rate, tunnels)
     }
 
     return valves
