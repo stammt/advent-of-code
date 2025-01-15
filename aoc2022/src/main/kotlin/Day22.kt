@@ -15,7 +15,11 @@ enum class Direction(val point: Point) {
     NORTH(Point(0, -1)),
     SOUTH(Point(0, 1)),
     EAST(Point(1, 0)),
-    WEST(Point(0, 1))
+    WEST(Point(-1, 0))
+}
+
+fun makeTurn(dir: Point, turn: Char): Point {
+    return if (turn == 'L') Point(dir.y, -dir.x) else Point(-dir.y, dir.x)
 }
 
 data class EdgeTransition(val face: Int,
@@ -29,8 +33,29 @@ data class Face(
     val eastEdge: EdgeTransition,
     val westEdge: EdgeTransition) {
 
+    fun getEdgeTransition(dir: Point): EdgeTransition {
+        when (dir) {
+            Direction.NORTH.point -> return northEdge
+            Direction.SOUTH.point -> return southEdge
+            Direction.EAST.point -> return eastEdge
+            Direction.WEST.point -> return westEdge
+        }
+        print("*** unknown direction $dir")
+        return northEdge
+    }
+
     fun facePointToMapPoint(p: Point, faceSize: Int): Point {
         return Point(position.x * faceSize + p.x, position.y * faceSize + p.y)
+    }
+}
+
+fun facingChar(dir: Point): Char {
+    return when (dir) {
+        Direction.NORTH.point -> '^'
+        Direction.SOUTH.point -> 'v'
+        Direction.EAST.point -> '>'
+        Direction.WEST.point -> '<'
+        else -> '.'
     }
 }
 
@@ -42,19 +67,76 @@ fun day22part2(input: List<String>) {
     val start = startPoint(input, faceSize, faces)!!
     println("Starting at ${start.second} in face ${start.first.position}")
 
-//    val face = faces[4]
-//    val p = Point(2, 3)
-//    val dir = Direction.SOUTH
-//    val gridPoint = face.facePointToMapPoint(p, faceSize)
-//
-//    val nextFace = faces[face.southEdge.face]
-//    val nextP = face.southEdge.pointTransform(p)
-//    val nextDir = face.southEdge.facing
-//    val nextGridPoint = nextFace.facePointToMapPoint(nextP, faceSize)
-//    println("Walked west from $gridPoint, now at $nextGridPoint facing $nextDir")
-//
+    val moveLine = input.last { p -> p.trim().isNotEmpty() }
+    val moves = mutableListOf<String>()
+    var numberAcc = ""
+    for (i in moveLine.indices) {
+        if (moveLine[i].isDigit()) {
+            numberAcc += moveLine[i]
+        } else {
+            if (numberAcc.isNotEmpty()) {
+                moves.add(numberAcc)
+                numberAcc = ""
+            }
+            moves.add(moveLine[i].toString())
+        }
+    }
+    if (numberAcc.isNotEmpty()) {
+        moves.add(numberAcc)
+    }
 
-    printMap(faces, faceSize)
+    var pos = start
+    var facing = Direction.EAST.point
+    val overlay = mutableMapOf<Point, Char>()
+    for (i in moves.indices) {
+        val oldP = pos.second
+        val oldMapPoint = pos.first.facePointToMapPoint(oldP, faceSize)
+        val oldFacing = facing
+        if (moves[i] == "L" || moves[i] == "R") {
+            facing = makeTurn(facing, moves[i][0])
+            val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
+//            println("Move ${moves[i]}: $oldMapPoint ${facingChar(oldFacing)} to $mapPoint facing ${facingChar(facing)}")
+            overlay[mapPoint] = facingChar(facing)
+        } else {
+            val count = moves[i].toInt()
+            var p = pos.second
+            var face = pos.first
+            for (step in 0 until count) {
+                var nextPos = Point(p.x + facing.x, p.y + facing.y)
+                if (!face.grid.containsKey(nextPos)) {
+                    println("Transition at step $step")
+                    val edgeTransition = face.getEdgeTransition(facing)
+                    nextPos = edgeTransition.pointTransform(p)
+                    val nextFacing = edgeTransition.facing.point
+                    val nextFace = faces[edgeTransition.face]
+                    if (nextFace.grid[nextPos] == '.') {
+                        p = nextPos
+                        facing = nextFacing
+                        face = nextFace
+                        pos = face to p
+                    }
+                } else if (face.grid[nextPos] == '#') {
+                    println("Hit a wall, stopping at $step")
+                    pos = face to p
+                    break
+                } else {
+                    println("Stepping $step out of $count")
+                    p = nextPos
+                    pos = face to nextPos
+                }
+                val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
+//                println("Move ${moves[i]}: $oldMapPoint ${facingChar(oldFacing)} to $mapPoint facing ${facingChar(facing)}")
+                overlay[mapPoint] = facingChar(facing)
+            }
+        }
+        val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
+        println("Move ${moves[i]}: $oldMapPoint ${facingChar(oldFacing)} to $mapPoint facing ${facingChar(facing)}")
+        overlay[mapPoint] = facingChar(facing)
+    }
+
+    printMap(faces, faceSize, overlay)
+    val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
+    println("Ended at $mapPoint")
 }
 
 fun startPoint(input: List<String>, faceSize: Int, faces: List<Face>) : Pair<Face, Point>? {
@@ -74,7 +156,7 @@ fun mapPointToFacePoint(p: Point, faces: List<Face>, faceSize: Int) : Pair<Face,
     return face to Point(p.x % faceSize, p.y % faceSize)
 }
 
-fun printMap(faces: List<Face>, faceSize: Int) {
+fun printMap(faces: List<Face>, faceSize: Int, overlay: Map<Point, Char>) {
     val projected = mutableMapOf<Point, Char>()
     for (face in faces) {
         for (p in face.grid.keys) {
@@ -83,7 +165,9 @@ fun printMap(faces: List<Face>, faceSize: Int) {
     }
     for (y in 0 until (faceSize * 3)) {
         for (x in 0 until (faceSize * 4)) {
-            if (projected.containsKey(Point(x, y))) {
+            if (overlay.contains(Point(x, y))) {
+                print(overlay[Point(x, y)])
+            } else if (projected.containsKey(Point(x, y))) {
                 print(projected[(Point(x, y))]);
             } else {
                 print(' ')
@@ -155,6 +239,21 @@ fun readGrid(input: List<String>, startX: Int, stopX: Int, startY: Int, stopY: I
 //        println()
 //    }
     return grid
+}
+
+fun testCases(faces: List<Face>, faceSize: Int) {
+    val a = Point(11, 5)
+    val aFacePoint = mapPointToFacePoint(a, faces, faceSize)
+    println("$a mapped to $aFacePoint")
+    val bFacePoint = aFacePoint.first.eastEdge.pointTransform(aFacePoint.second)
+    val bFace = faces [aFacePoint.first.eastEdge.face]
+    val b = bFace.facePointToMapPoint(bFacePoint, faceSize)
+
+    val c = Point(10, 11)
+    val cFacePoint = mapPointToFacePoint(c, faces, faceSize)
+    val dFacePoint = cFacePoint.first.southEdge.pointTransform(cFacePoint.second)
+    val dFace = faces[cFacePoint.first.southEdge.face]
+    val d = dFace.facePointToMapPoint(dFacePoint, faceSize)
 }
 
 fun day22part1(input: List<String>) {
