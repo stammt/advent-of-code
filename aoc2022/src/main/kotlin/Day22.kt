@@ -59,6 +59,15 @@ fun facingChar(dir: Point): Char {
     }
 }
 
+fun facingScore(dir: Point): Int {
+    return when (dir) {
+        Direction.NORTH.point -> 3
+        Direction.SOUTH.point -> 1
+        Direction.EAST.point -> 0
+        Direction.WEST.point -> 2
+        else -> 0
+    }
+}
 
 fun day22part2(input: List<String>) {
     val faceSize = 4 // sample=4, input=50
@@ -104,23 +113,27 @@ fun day22part2(input: List<String>) {
             for (step in 0 until count) {
                 var nextPos = Point(p.x + facing.x, p.y + facing.y)
                 if (!face.grid.containsKey(nextPos)) {
-                    println("Transition at step $step")
+//                    println("Transition at step $step - $nextPos not in ${face.position}")
                     val edgeTransition = face.getEdgeTransition(facing)
                     nextPos = edgeTransition.pointTransform(p)
                     val nextFacing = edgeTransition.facing.point
                     val nextFace = faces[edgeTransition.face]
+//                    println("--- moving to face ${nextFace.position} $nextPos ${facingChar(nextFacing)}")
                     if (nextFace.grid[nextPos] == '.') {
                         p = nextPos
                         facing = nextFacing
                         face = nextFace
                         pos = face to p
+                    } else {
+//                        println("--- Hit a wall after transition, resetting")
+                        break
                     }
                 } else if (face.grid[nextPos] == '#') {
-                    println("Hit a wall, stopping at $step")
+//                    println("Hit a wall, stopping at $step")
                     pos = face to p
                     break
                 } else {
-                    println("Stepping $step out of $count")
+//                    println("Stepping $step out of $count")
                     p = nextPos
                     pos = face to nextPos
                 }
@@ -130,13 +143,14 @@ fun day22part2(input: List<String>) {
             }
         }
         val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
-        println("Move ${moves[i]}: $oldMapPoint ${facingChar(oldFacing)} to $mapPoint facing ${facingChar(facing)}")
+        println("Move ${moves[i]}: $oldMapPoint ${facingChar(oldFacing)} to $mapPoint facing ${facingChar(facing)}\n")
         overlay[mapPoint] = facingChar(facing)
     }
 
     printMap(faces, faceSize, overlay)
     val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
-    println("Ended at $mapPoint")
+    val score = (1000 * (mapPoint.y + 1)) + (4 * (mapPoint.x + 1)) + facingScore(facing)
+    println("Ended at $mapPoint with score $score")
 }
 
 fun startPoint(input: List<String>, faceSize: Int, faces: List<Face>) : Pair<Face, Point>? {
@@ -194,7 +208,7 @@ fun readSampleFaces(input: List<String>, faceSize: Int): List<Face> {
         EdgeTransition(5, { p -> Point(faceSize - 1 - p.y, faceSize - 1)}, Direction.NORTH))
     val face3 = Face(Point(1, 1),
         readGrid(input, faceSize, faceSize * 2, faceSize, (2*faceSize)),
-        EdgeTransition(0, { p -> Point(0, p.x)}, Direction.WEST),
+        EdgeTransition(0, { p -> Point(0, p.x)}, Direction.EAST),
         EdgeTransition(4, { p -> Point(0, faceSize - 1 - p.x) }, Direction.EAST),
         EdgeTransition(3, { p -> Point(0, p.y) }, Direction.EAST),
         EdgeTransition(1, { p -> Point(faceSize - 1, p.y) }, Direction.WEST)
@@ -217,8 +231,8 @@ fun readSampleFaces(input: List<String>, faceSize: Int): List<Face> {
         readGrid(input, faceSize * 3, faceSize * 4, faceSize * 2,faceSize * 3),
         EdgeTransition(3, { p -> Point(faceSize - 1, faceSize - 1 - p.x) }, Direction.WEST),
         EdgeTransition(1, { p -> Point(0, faceSize - 1 - p.x) }, Direction.EAST),
-        EdgeTransition(4, { p -> Point(faceSize - 1, p.y) }, Direction.EAST),
-        EdgeTransition(0, { p -> Point(faceSize - 1, faceSize - 1 - p.y) }, Direction.EAST)
+        EdgeTransition(0, { p -> Point(faceSize - 1, faceSize - 1 - p.y) }, Direction.WEST),
+        EdgeTransition(4, { p -> Point(faceSize - 1, p.y) }, Direction.WEST)
         )
 
     return listOf(face1, face2, face3, face4, face5, face6)
@@ -231,13 +245,6 @@ fun readGrid(input: List<String>, startX: Int, stopX: Int, startY: Int, stopY: I
             grid[Point(x-startX,y-startY)] = input[y][x]
         }
 
-//    println("Read grid at $startX, $startY:")
-//    for (y in 0 until 4) {
-//        for (x in 0 until 4) {
-//            print(grid[Point(x, y)])
-//        }
-//        println()
-//    }
     return grid
 }
 
