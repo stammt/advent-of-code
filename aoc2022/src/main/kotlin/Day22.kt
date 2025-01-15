@@ -6,87 +6,156 @@ import kotlin.math.max
 import kotlin.math.min
 
 fun main(args: Array<String>) {
-//    val input = File("/Users/stammt/Documents/2022aoc/day22input.txt").readLines()
-    val input = File("/Users/stammt/Documents/2022aoc/day22sample.txt").readLines()
+    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day22sample.txt").readLines()
     day22part2(input)
 }
 
-enum class Face {
-    FRONT, BACK, TOP, BOTTOM, LEFT, RIGHT
+data class Point(val x: Int, val y: Int)
+enum class Direction(val point: Point) {
+    NORTH(Point(0, -1)),
+    SOUTH(Point(0, 1)),
+    EAST(Point(1, 0)),
+    WEST(Point(0, 1))
 }
+
+data class EdgeTransition(val face: Int,
+                          val pointTransform: (Point) -> Point ,
+                          val facing: Direction)
+data class Face(
+    val position: Point,
+    val grid: Map<Point, Char>,
+    val northEdge: EdgeTransition,
+    val southEdge: EdgeTransition,
+    val eastEdge: EdgeTransition,
+    val westEdge: EdgeTransition) {
+
+    fun facePointToMapPoint(p: Point, faceSize: Int): Point {
+        return Point(position.x * faceSize + p.x, position.y * faceSize + p.y)
+    }
+}
+
 
 fun day22part2(input: List<String>) {
-    val board = mutableMapOf<Pair<Int, Int>, Char>()
-    val turns = mutableListOf<String>()
-    var i = 0
-    while (input[i].isNotBlank()) {
-        for (x in input[i].indices) {
-            if (input[i][x] == '.' || input[i][x] == '#') {
-                board[x to i] = input[i][x]
-            }
-        }
-        i++
-    }
-    i++
-    var x = 0
-    var turn = ""
-    while (x < input[i].length) {
-        if (input[i][x].isDigit()) {
-            turn += input[i][x]
-        } else {
-            turns.add(turn)
-            turn = ""
-            turns.add("" + input[i][x])
-        }
-        x++
-    }
-    turns.add(turn)
+    val faceSize = 4 // sample=4, input=50
+    val faces = readSampleFaces(input, faceSize)
 
-//    println("Board: $board")
-//    println("Turns: $turns")
+    val start = startPoint(input, faceSize, faces)!!
+    println("Starting at ${start.second} in face ${start.first.position}")
 
-    // Split the board into 6 sides of 50x50 each, then define a transform between them
-    // that tells how to turn the "facing" and how to map between edges. I guess
-    // we'll just hardcode which face is which.
+//    val face = faces[4]
+//    val p = Point(2, 3)
+//    val dir = Direction.SOUTH
+//    val gridPoint = face.facePointToMapPoint(p, faceSize)
+//
+//    val nextFace = faces[face.southEdge.face]
+//    val nextP = face.southEdge.pointTransform(p)
+//    val nextDir = face.southEdge.facing
+//    val nextGridPoint = nextFace.facePointToMapPoint(nextP, faceSize)
+//    println("Walked west from $gridPoint, now at $nextGridPoint facing $nextDir")
+//
 
-    // For sample board, 4x4 faces:
-    val top = board.filter { it.key.second < 4 } // 1
-    val back = board.filter { it.key.second in 4..7 && it.key.first < 4 } // 2
-    val left = board.filter { it.key.second in 4..7 && it.key.first in 4..7 } // 3
-    val front = board.filter { it.key.second in 4..7 && it.key.first > 7 } // 4
-    val bottom = board.filter { it.key.second > 7 && it.key.first in 8..11 } // 5
-    val right = board.filter { it.key.second > 7 && it.key.first > 11 } // 6
-
-    val faceOrigins = mutableMapOf<Face, Pair<Int, Int>>(
-        Face.TOP to (8 to 0),
-        Face.RIGHT to (12 to 8),
-        Face.BOTTOM to (8 to 8),
-        Face.LEFT to (4 to 4),
-        Face.FRONT to (8 to 4),
-        Face.BACK to (0 to 4)
-    )
-
-
-    val cube = SampleCubeDefinition()
-
-    val minX = board.filter{ it.key.second == 0 && board[it.key] == '.'  }.map { it.key.first }.min()
-
-    var facing = 0
-    var pos = minX to 0
-    var face = Face.TOP
-    println("Starting at $pos")
-    for (turn in turns) {
-        if (turn[0].isDigit()) {
-            pos = move(turn.toInt(), pos, facing, board)
-        } else {
-            facing = turn(turn, facing)
-        }
-    }
-
-    var result = (1000 * (pos.second + 1)) + (4 * (pos.first + 1)) + facing
-    println("Result $result ($pos facing $facing)")
+    printMap(faces, faceSize)
 }
 
+fun startPoint(input: List<String>, faceSize: Int, faces: List<Face>) : Pair<Face, Point>? {
+    for (y in 0 until input.size) {
+        for (x in 0 until input[y].length) {
+            if (input[y][x] == '.') {
+                return mapPointToFacePoint(Point(x, y), faces, faceSize)
+            }
+        }
+    }
+    return null
+}
+
+fun mapPointToFacePoint(p: Point, faces: List<Face>, faceSize: Int) : Pair<Face, Point> {
+    println("$p is in face ${p.x / faceSize}, ${p.y / faceSize}")
+    val face = faces.first { f -> f.position == Point(p.x / faceSize, p.y / faceSize) }
+    return face to Point(p.x % faceSize, p.y % faceSize)
+}
+
+fun printMap(faces: List<Face>, faceSize: Int) {
+    val projected = mutableMapOf<Point, Char>()
+    for (face in faces) {
+        for (p in face.grid.keys) {
+            projected[face.facePointToMapPoint(p, faceSize)] = face.grid[p]!!
+        }
+    }
+    for (y in 0 until (faceSize * 3)) {
+        for (x in 0 until (faceSize * 4)) {
+            if (projected.containsKey(Point(x, y))) {
+                print(projected[(Point(x, y))]);
+            } else {
+                print(' ')
+            }
+        }
+        println()
+    }
+    println()
+}
+
+fun readSampleFaces(input: List<String>, faceSize: Int): List<Face> {
+    // There must be a way to figure this out programmatically...
+    val face1 = Face(Point(2, 0),
+        readGrid(input, (2*faceSize), (3*faceSize), 0, faceSize),
+        EdgeTransition(4, { p -> Point(p.x, faceSize-1) }, Direction.NORTH),
+        EdgeTransition(3, { p -> Point(p.x, 0)}, Direction.SOUTH),
+        EdgeTransition(5, { p -> Point(faceSize - 1 - p.y, 0)}, Direction.SOUTH),
+        EdgeTransition(2, { p -> Point(faceSize - 1, p.y )}, Direction.WEST))
+    val face2 = Face(Point(0, 1),
+        readGrid(input, 0, faceSize, faceSize, (2*faceSize)),
+        EdgeTransition(0, { p -> Point(faceSize - 1 - p.x, 0)}, Direction.SOUTH),
+        EdgeTransition(4, { p -> Point(faceSize - 1 - p.x, faceSize - 1)}, Direction.NORTH),
+        EdgeTransition(2, { p -> Point(0, p.y)}, Direction.EAST),
+        EdgeTransition(5, { p -> Point(faceSize - 1 - p.y, faceSize - 1)}, Direction.NORTH))
+    val face3 = Face(Point(1, 1),
+        readGrid(input, faceSize, faceSize * 2, faceSize, (2*faceSize)),
+        EdgeTransition(0, { p -> Point(0, p.x)}, Direction.WEST),
+        EdgeTransition(4, { p -> Point(0, faceSize - 1 - p.x) }, Direction.EAST),
+        EdgeTransition(3, { p -> Point(0, p.y) }, Direction.EAST),
+        EdgeTransition(1, { p -> Point(faceSize - 1, p.y) }, Direction.WEST)
+        )
+    val face4 = Face(Point(2, 1),
+        readGrid(input, faceSize * 2, faceSize * 3, faceSize, (2*faceSize)),
+        EdgeTransition(0, { p -> Point(p.x, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(4, { p -> Point(p.x, 0) }, Direction.SOUTH),
+        EdgeTransition(5, { p -> Point(faceSize - 1 - p.y, 0)}, Direction.SOUTH),
+        EdgeTransition(2, { p -> Point(faceSize - 1, p.y) }, Direction.WEST),
+        )
+    val face5 = Face(Point(2, 2),
+        readGrid(input, faceSize * 2, faceSize * 3, faceSize * 2,faceSize * 3),
+        EdgeTransition(3, { p -> Point(p.x, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(1, { p -> Point(faceSize - 1 - p.x, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(5, { p -> Point(0, p.y)}, Direction.EAST),
+        EdgeTransition(2, { p -> Point(faceSize - 1 - p.y, faceSize - 1) }, Direction.NORTH),
+    )
+    val face6 = Face(Point(3, 2),
+        readGrid(input, faceSize * 3, faceSize * 4, faceSize * 2,faceSize * 3),
+        EdgeTransition(3, { p -> Point(faceSize - 1, faceSize - 1 - p.x) }, Direction.WEST),
+        EdgeTransition(1, { p -> Point(0, faceSize - 1 - p.x) }, Direction.EAST),
+        EdgeTransition(4, { p -> Point(faceSize - 1, p.y) }, Direction.EAST),
+        EdgeTransition(0, { p -> Point(faceSize - 1, faceSize - 1 - p.y) }, Direction.EAST)
+        )
+
+    return listOf(face1, face2, face3, face4, face5, face6)
+}
+
+fun readGrid(input: List<String>, startX: Int, stopX: Int, startY: Int, stopY: Int): Map<Point, Char> {
+    val grid = mutableMapOf<Point, Char>()
+    for (x in startX until stopX)
+        for (y in startY until stopY) {
+            grid[Point(x-startX,y-startY)] = input[y][x]
+        }
+
+//    println("Read grid at $startX, $startY:")
+//    for (y in 0 until 4) {
+//        for (x in 0 until 4) {
+//            print(grid[Point(x, y)])
+//        }
+//        println()
+//    }
+    return grid
+}
 
 fun day22part1(input: List<String>) {
     val board = mutableMapOf<Pair<Int, Int>, Char>()
@@ -134,154 +203,6 @@ fun day22part1(input: List<String>) {
     var result = (1000 * (pos.second + 1)) + (4 * (pos.first + 1)) + facing
     println("Result $result ($pos facing $facing)")
 }
-
-class SampleCubeDefinition() {
-    fun getNextFace(pos: Pair<Int, Int>, face: Face, facing: Int) : FaceTransition {
-        if (face == Face.TOP) {
-            val nextFacing = when (facing) {
-                0 -> 3
-                1 -> 1
-                2 -> 1
-                3 -> 1
-                else -> throw IllegalArgumentException()
-            }
-            val nextFace = when (facing) {
-                0 -> Face.RIGHT
-                1 -> Face.FRONT
-                2 -> Face.LEFT
-                3 -> Face.BACK
-                else -> throw IllegalArgumentException()
-            }
-            val nextPos = when (facing) {
-                0 -> 3 to 3 - pos.second
-                1 -> pos.first to 0
-                2 -> pos.second to 0
-                3 -> 0 to 3 - pos.second
-                else -> throw IllegalArgumentException()
-            }
-            return FaceTransition(nextFacing, nextFace, nextPos)
-        } else if (face == Face.RIGHT) {
-            val nextFacing = when (facing) {
-                0 -> 2
-                1 -> 0
-                2 -> 2
-                3 -> 1
-                else -> throw IllegalArgumentException()
-            }
-            val nextFace = when (facing) {
-                0 -> Face.FRONT
-                1 -> Face.BOTTOM
-                2 -> Face.BACK
-                3 -> Face.TOP
-                else -> throw IllegalArgumentException()
-            }
-            val nextPos = when (facing) {
-                0 -> 0 to pos.second
-                1 -> 0 to 3 - pos.first
-                2 -> 3 to pos.second
-                3 -> 0 to pos.first
-                else -> throw IllegalArgumentException()
-            }
-            return FaceTransition(nextFacing, nextFace, nextPos)
-        } else if (face == Face.BOTTOM) {
-            val nextFacing = when (facing) {
-                0 -> 0
-                1 -> 1
-                2 -> 3
-                3 -> 3
-                else -> throw IllegalArgumentException()
-            }
-            val nextFace = when (facing) {
-                0 -> Face.RIGHT
-                1 -> Face.BACK
-                2 -> Face.LEFT
-                3 -> Face.FRONT
-                else -> throw IllegalArgumentException()
-            }
-            val nextPos = when (facing) {
-                0 -> 0 to pos.second
-                1 -> pos.first to 0
-                2 -> 3 - pos.second to 3
-                3 -> pos.first to 3
-                else -> throw IllegalArgumentException()
-            }
-            return FaceTransition(nextFacing, nextFace, nextPos)
-        } else if (face == Face.LEFT) {
-            val nextFacing = when (facing) {
-                0 -> 0
-                1 -> 1
-                2 -> 2
-                3 -> 1
-                else -> throw IllegalArgumentException()
-            }
-            val nextFace = when (facing) {
-                0 -> Face.FRONT
-                1 -> Face.BOTTOM
-                2 -> Face.BACK
-                3 -> Face.TOP
-                else -> throw IllegalArgumentException()
-            }
-            val nextPos = when (facing) {
-                0 -> 0 to pos.second
-                1 -> 0 to 3 - pos.first
-                2 -> 3 to pos.second
-                3 -> 0 to pos.first
-                else -> throw IllegalArgumentException()
-            }
-            return FaceTransition(nextFacing, nextFace, nextPos)
-        } else if (face == Face.FRONT) {
-            val nextFacing = when (facing) {
-                0 -> 1
-                1 -> 1
-                2 -> 2
-                3 -> 3
-                else -> throw IllegalArgumentException()
-            }
-            val nextFace = when (facing) {
-                0 -> Face.RIGHT
-                1 -> Face.BOTTOM
-                2 -> Face.LEFT
-                3 -> Face.TOP
-                else -> throw IllegalArgumentException()
-            }
-            val nextPos = when (facing) {
-                0 -> 0 to 0 - pos.second
-                1 -> pos.first to 0
-                2 -> 3 to pos.second
-                3 -> pos.first to 3
-                else -> throw IllegalArgumentException()
-            }
-            return FaceTransition(nextFacing, nextFace, nextPos)
-        } else if (face == Face.BACK) {
-            val nextFacing = when (facing) {
-                0 -> 0
-                1 -> 3
-                2 -> 3
-                3 -> 1
-                else -> throw IllegalArgumentException()
-            }
-            val nextFace = when (facing) {
-                0 -> Face.LEFT
-                1 -> Face.BOTTOM
-                2 -> Face.RIGHT
-                3 -> Face.TOP
-                else -> throw IllegalArgumentException()
-            }
-            val nextPos = when (facing) {
-                0 -> 0 to pos.second
-                1 -> 3-pos.first to 3
-                2 -> 3-pos.first to 3
-                3 -> 0 to 3-pos.first
-                else -> throw IllegalArgumentException()
-            }
-            return FaceTransition(nextFacing, nextFace, nextPos)
-        } else {
-            throw IllegalStateException()
-        }
-    }
-}
-
-data class FaceTransition(val nextFacing: Int, val nextFace: Face, val nextPos: Pair<Int, Int>)
 
 fun turn(dir: String, facing: Int) : Int {
     val next = if (dir == "R") facing + 1 else facing - 1

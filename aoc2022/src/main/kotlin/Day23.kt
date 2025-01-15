@@ -1,9 +1,4 @@
 import java.io.File
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
 
 fun main(args: Array<String>) {
     val input = File("/Users/stammt/Documents/2022aoc/day23input.txt").readLines()
@@ -149,11 +144,11 @@ fun printMap(map: Map<Pair<Int, Int>, Elf>) {
     }
 }
 
-interface Direction {
+interface Direction23 {
     fun getFrom(pos: Pair<Int, Int>) : Pair<Int, Int>
 }
 
-enum class CardinalDirection : Direction {
+enum class CardinalDirection : Direction23 {
     N {
         override fun getFrom(pos: Pair<Int, Int>): Pair<Int, Int> {
                 return pos.first to pos.second - 1
@@ -196,7 +191,7 @@ enum class CardinalDirection : Direction {
     },
 }
 
-data class DirectionCheck(val move: Direction, val checks: List<Direction>) {
+data class DirectionCheck(val move: Direction23, val checks: List<Direction23>) {
 }
 
 val NORTH = DirectionCheck(CardinalDirection.N, listOf(CardinalDirection.N, CardinalDirection.NE, CardinalDirection.NW))
