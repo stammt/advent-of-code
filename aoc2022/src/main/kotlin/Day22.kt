@@ -6,7 +6,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 fun main(args: Array<String>) {
-    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day22sample.txt").readLines()
+    val input = File("/Users/stammt/Documents/dev/advent-of-code/aoc2022/input/day22input.txt").readLines()
     day22part2(input)
 }
 
@@ -70,8 +70,8 @@ fun facingScore(dir: Point): Int {
 }
 
 fun day22part2(input: List<String>) {
-    val faceSize = 4 // sample=4, input=50
-    val faces = readSampleFaces(input, faceSize)
+    val faceSize = 50 // sample=4, input=50
+    val faces = readInputFaces(input, faceSize)
 
     val start = startPoint(input, faceSize, faces)!!
     println("Starting at ${start.second} in face ${start.first.position}")
@@ -151,6 +151,9 @@ fun day22part2(input: List<String>) {
     val mapPoint = pos.first.facePointToMapPoint(pos.second, faceSize)
     val score = (1000 * (mapPoint.y + 1)) + (4 * (mapPoint.x + 1)) + facingScore(facing)
     println("Ended at $mapPoint with score $score")
+    // 148041 too high
+    // 15421 too low
+    // not 65374
 }
 
 fun startPoint(input: List<String>, faceSize: Int, faces: List<Face>) : Pair<Face, Point>? {
@@ -192,8 +195,62 @@ fun printMap(faces: List<Face>, faceSize: Int, overlay: Map<Point, Char>) {
     println()
 }
 
+fun readInputFaces(input: List<String>, faceSize: Int): List<Face> {
+    // There must be a way to figure this out programmatically...
+    // - 1 2
+    // - 3 -
+    // 4 5 -
+    // 6 - -
+    val face1 = Face(Point(1, 0),
+        readGrid(input, (1*faceSize), (2*faceSize), 0, faceSize),
+        EdgeTransition(5, { p -> Point(0, p.x) }, Direction.WEST),
+        EdgeTransition(2, { p -> Point(p.x, 0)}, Direction.SOUTH),
+        EdgeTransition(3, { p -> Point(0, faceSize - 1 - p.y)}, Direction.WEST),
+        EdgeTransition(1, { p -> Point(0, p.y )}, Direction.EAST))
+    val face2 = Face(Point(2, 0),
+        readGrid(input, (faceSize * 2), (faceSize * 3), 0, faceSize),
+        EdgeTransition(5, { p -> Point(p.x, faceSize - 1)}, Direction.NORTH),
+        EdgeTransition(2, { p -> Point(faceSize - 1, p.x)}, Direction.WEST),
+        EdgeTransition(0, { p -> Point(faceSize - 1, p.y)}, Direction.EAST),
+        EdgeTransition(4, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.EAST))
+    val face3 = Face(Point(1, 1),
+        readGrid(input, faceSize, faceSize * 2, faceSize, (2*faceSize)),
+        EdgeTransition(0, { p -> Point(p.x, faceSize - 1)}, Direction.NORTH),
+        EdgeTransition(4, { p -> Point(p.x, 0) }, Direction.SOUTH),
+        EdgeTransition(1, { p -> Point(p.y, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(3, { p -> Point(p.y, 0) }, Direction.SOUTH)
+    )
+    val face4 = Face(Point(0, 2),
+        readGrid(input, 0, faceSize, (faceSize * 2), (3*faceSize)),
+        EdgeTransition(2, { p -> Point(0, p.x) }, Direction.WEST),
+        EdgeTransition(5, { p -> Point(p.x, 0) }, Direction.SOUTH),
+        EdgeTransition(4, { p -> Point(0, p.y)}, Direction.EAST),
+        EdgeTransition(0, { p -> Point(0, faceSize - 1 - p.y) }, Direction.EAST),
+    )
+    val face5 = Face(Point(1, 2),
+        readGrid(input, faceSize, faceSize * 2, faceSize * 2,faceSize * 3),
+        EdgeTransition(2, { p -> Point(p.x, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(5, { p -> Point(faceSize - 1, p.x) }, Direction.WEST),
+        EdgeTransition(1, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.EAST),
+        EdgeTransition(3, { p -> Point(faceSize - 1, p.y) }, Direction.WEST),
+    )
+    val face6 = Face(Point(0, 3),
+        readGrid(input, 0, faceSize, faceSize * 3,faceSize * 4),
+        EdgeTransition(3, { p -> Point(p.x, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(1, { p -> Point(p.x, 0) }, Direction.SOUTH),
+        EdgeTransition(4, { p -> Point(faceSize - 1 - p.y, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(0, { p -> Point(p.y, 0) }, Direction.SOUTH)
+    )
+
+    return listOf(face1, face2, face3, face4, face5, face6)
+}
+
+
 fun readSampleFaces(input: List<String>, faceSize: Int): List<Face> {
     // There must be a way to figure this out programmatically...
+    // - - 1 -
+    // 2 3 4 -
+    // - - 5 6
     val face1 = Face(Point(2, 0),
         readGrid(input, (2*faceSize), (3*faceSize), 0, faceSize),
         EdgeTransition(4, { p -> Point(p.x, faceSize-1) }, Direction.NORTH),
