@@ -154,6 +154,10 @@ fun day22part2(input: List<String>) {
     // 148041 too high
     // 15421 too low
     // not 65374
+    // not 29515
+
+//    val testOverlay = simpleInputTestCases(faces, faceSize)
+//    printMap(faces, faceSize, testOverlay)
 }
 
 fun startPoint(input: List<String>, faceSize: Int, faces: List<Face>) : Pair<Face, Point>? {
@@ -180,7 +184,7 @@ fun printMap(faces: List<Face>, faceSize: Int, overlay: Map<Point, Char>) {
             projected[face.facePointToMapPoint(p, faceSize)] = face.grid[p]!!
         }
     }
-    for (y in 0 until (faceSize * 3)) {
+    for (y in 0 until (faceSize * 4)) {
         for (x in 0 until (faceSize * 4)) {
             if (overlay.contains(Point(x, y))) {
                 print(overlay[Point(x, y)])
@@ -203,16 +207,16 @@ fun readInputFaces(input: List<String>, faceSize: Int): List<Face> {
     // 6 - -
     val face1 = Face(Point(1, 0),
         readGrid(input, (1*faceSize), (2*faceSize), 0, faceSize),
-        EdgeTransition(5, { p -> Point(0, p.x) }, Direction.WEST),
+        EdgeTransition(5, { p -> Point(0, p.x) }, Direction.EAST),
         EdgeTransition(2, { p -> Point(p.x, 0)}, Direction.SOUTH),
-        EdgeTransition(3, { p -> Point(0, faceSize - 1 - p.y)}, Direction.WEST),
-        EdgeTransition(1, { p -> Point(0, p.y )}, Direction.EAST))
+        EdgeTransition(1, { p -> Point(0, p.y )}, Direction.EAST),
+        EdgeTransition(3, { p -> Point(0, faceSize - 1 - p.y)}, Direction.EAST))
     val face2 = Face(Point(2, 0),
         readGrid(input, (faceSize * 2), (faceSize * 3), 0, faceSize),
         EdgeTransition(5, { p -> Point(p.x, faceSize - 1)}, Direction.NORTH),
         EdgeTransition(2, { p -> Point(faceSize - 1, p.x)}, Direction.WEST),
-        EdgeTransition(0, { p -> Point(faceSize - 1, p.y)}, Direction.EAST),
-        EdgeTransition(4, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.EAST))
+        EdgeTransition(4, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.EAST),
+        EdgeTransition(0, { p -> Point(faceSize - 1, p.y)}, Direction.WEST))
     val face3 = Face(Point(1, 1),
         readGrid(input, faceSize, faceSize * 2, faceSize, (2*faceSize)),
         EdgeTransition(0, { p -> Point(p.x, faceSize - 1)}, Direction.NORTH),
@@ -222,7 +226,7 @@ fun readInputFaces(input: List<String>, faceSize: Int): List<Face> {
     )
     val face4 = Face(Point(0, 2),
         readGrid(input, 0, faceSize, (faceSize * 2), (3*faceSize)),
-        EdgeTransition(2, { p -> Point(0, p.x) }, Direction.WEST),
+        EdgeTransition(2, { p -> Point(0, p.x) }, Direction.EAST),
         EdgeTransition(5, { p -> Point(p.x, 0) }, Direction.SOUTH),
         EdgeTransition(4, { p -> Point(0, p.y)}, Direction.EAST),
         EdgeTransition(0, { p -> Point(0, faceSize - 1 - p.y) }, Direction.EAST),
@@ -231,14 +235,14 @@ fun readInputFaces(input: List<String>, faceSize: Int): List<Face> {
         readGrid(input, faceSize, faceSize * 2, faceSize * 2,faceSize * 3),
         EdgeTransition(2, { p -> Point(p.x, faceSize - 1) }, Direction.NORTH),
         EdgeTransition(5, { p -> Point(faceSize - 1, p.x) }, Direction.WEST),
-        EdgeTransition(1, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.EAST),
-        EdgeTransition(3, { p -> Point(faceSize - 1, p.y) }, Direction.WEST),
+        EdgeTransition(1, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.WEST),
+        EdgeTransition(3, { p -> Point(faceSize - 1, p.y) }, Direction.WEST)
     )
     val face6 = Face(Point(0, 3),
         readGrid(input, 0, faceSize, faceSize * 3,faceSize * 4),
         EdgeTransition(3, { p -> Point(p.x, faceSize - 1) }, Direction.NORTH),
         EdgeTransition(1, { p -> Point(p.x, 0) }, Direction.SOUTH),
-        EdgeTransition(4, { p -> Point(faceSize - 1 - p.y, faceSize - 1) }, Direction.NORTH),
+        EdgeTransition(4, { p -> Point(p.y, faceSize - 1) }, Direction.NORTH),
         EdgeTransition(0, { p -> Point(p.y, 0) }, Direction.SOUTH)
     )
 
@@ -305,7 +309,7 @@ fun readGrid(input: List<String>, startX: Int, stopX: Int, startY: Int, stopY: I
     return grid
 }
 
-fun testCases(faces: List<Face>, faceSize: Int) {
+fun sampleTestCases(faces: List<Face>, faceSize: Int) {
     val a = Point(11, 5)
     val aFacePoint = mapPointToFacePoint(a, faces, faceSize)
     println("$a mapped to $aFacePoint")
@@ -318,6 +322,44 @@ fun testCases(faces: List<Face>, faceSize: Int) {
     val dFacePoint = cFacePoint.first.southEdge.pointTransform(cFacePoint.second)
     val dFace = faces[cFacePoint.first.southEdge.face]
     val d = dFace.facePointToMapPoint(dFacePoint, faceSize)
+}
+
+fun simpleInputTestCases(faces: List<Face>, faceSize: Int): Map<Point, Char> {
+    // north/south 1, 2, 3, 4, 5, 6
+    val a = Point(1, 12)
+    val aFacePoint = mapPointToFacePoint(a, faces, faceSize)
+    println("$a mapped to $aFacePoint")
+    val bFacePoint = aFacePoint.first.northEdge.pointTransform(aFacePoint.second)
+    val bFace = faces [aFacePoint.first.northEdge.face]
+    val b = bFace.facePointToMapPoint(bFacePoint, faceSize)
+    println("Going north from $a went to $bFacePoint facing ${facingChar(aFacePoint.first.northEdge.facing.point)} in $bFace")
+
+    val c = Point(2, 15)
+    val cFacePoint = mapPointToFacePoint(c, faces, faceSize)
+    println("$c mapped to $cFacePoint")
+    val dFacePoint = cFacePoint.first.southEdge.pointTransform(cFacePoint.second)
+    val dFace = faces[cFacePoint.first.southEdge.face]
+    val d = dFace.facePointToMapPoint(dFacePoint, faceSize)
+    println("Going south from $c went to $dFacePoint facing ${facingChar(cFacePoint.first.southEdge.facing.point)} in $dFace")
+
+//    // east/west 1, 2, 3, 4, 5, 6
+//    val a = Point(7, 9)
+//    val aFacePoint = mapPointToFacePoint(a, faces, faceSize)
+//    println("$a mapped to $aFacePoint")
+//    val bFacePoint = aFacePoint.first.eastEdge.pointTransform(aFacePoint.second)
+//    val bFace = faces [aFacePoint.first.eastEdge.face]
+//    val b = bFace.facePointToMapPoint(bFacePoint, faceSize)
+//    println("Going east from $a went to $bFacePoint facing ${facingChar(aFacePoint.first.eastEdge.facing.point)} in $bFace")
+//
+//    val c = Point(4, 10)
+//    val cFacePoint = mapPointToFacePoint(c, faces, faceSize)
+//    println("$c mapped to $cFacePoint")
+//    val dFacePoint = cFacePoint.first.westEdge.pointTransform(cFacePoint.second)
+//    val dFace = faces[cFacePoint.first.westEdge.face]
+//    val d = dFace.facePointToMapPoint(dFacePoint, faceSize)
+//    println("Going west from $c went to $dFacePoint facing ${facingChar(cFacePoint.first.westEdge.facing.point)} in $dFace")
+
+    return mapOf(a to 'A', b to 'B', c to 'C', d to 'D')
 }
 
 fun day22part1(input: List<String>) {
