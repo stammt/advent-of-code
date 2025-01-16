@@ -215,7 +215,7 @@ fun readInputFaces(input: List<String>, faceSize: Int): List<Face> {
         readGrid(input, (faceSize * 2), (faceSize * 3), 0, faceSize),
         EdgeTransition(5, { p -> Point(p.x, faceSize - 1)}, Direction.NORTH),
         EdgeTransition(2, { p -> Point(faceSize - 1, p.x)}, Direction.WEST),
-        EdgeTransition(4, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.EAST),
+        EdgeTransition(4, { p -> Point(faceSize - 1, faceSize - 1 - p.y)}, Direction.WEST),
         EdgeTransition(0, { p -> Point(faceSize - 1, p.y)}, Direction.WEST))
     val face3 = Face(Point(1, 1),
         readGrid(input, faceSize, faceSize * 2, faceSize, (2*faceSize)),
