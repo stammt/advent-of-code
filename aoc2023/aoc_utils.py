@@ -22,7 +22,7 @@ class PuzzleInput:
         return self.getTestInput() if test == True else self.getFileInput()
     
 # Parse a string of space separated ints into a list of ints
-def splitInts(line, separator=' ') -> list[int]:
+def split_ints(line, separator=' ') -> list[int]:
     return list(map(lambda c: int(c), line.strip().split(separator)))
 
 # Run parts 1&2 and print timing info
