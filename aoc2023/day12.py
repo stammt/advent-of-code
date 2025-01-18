@@ -11,7 +11,7 @@ testInput = """???.### 1,1,3
 ?###???????? 3,2,1"""
 input = PuzzleInput('input-day12.txt', testInput)
 
-lines = input.getInputLines(test=False)
+lines = input.getInputLines(test=True)
 
 def apply(s, pattern) -> str:
     option = ''
@@ -33,23 +33,70 @@ def buildRegex(numbers):
     s += r'\.*'
     return re.compile(s)
 
+def is_potential(s: str, numbers: list[int], hashCount: int) -> bool:
+    if s.count('#') > hashCount:
+        return False
+    
+    slot = s.find('?')
+    if slot != -1:
+        # print(f'Trimming {s} to {s[0:slot]}')
+        s = s[0:slot]
+
+
+    blockLen = 0
+    blocks = []
+    for sidx in range(len(s)):
+        if s[sidx] == '#':
+            blockLen += 1
+        elif blockLen > 0:
+            blocks.append(blockLen)
+            blockLen = 0
+    if blockLen > 0:
+        blocks.append(blockLen)
+
+    # print(f'Found {blocks} in {s}')
+    # if there are too many blocks, return false
+    if len(blocks) > len(numbers):
+        return False
+    
+    # if the blocks don't match, return false
+    for i in range(len(blocks)):
+        if blocks[i] > numbers[i]:
+            return False
+            
+    return True
+
+
+def solve(pattern: str, numbers: list[int]) -> int:
+    regex = buildRegex(numbers)
+    hashCount = sum(numbers)
+    q = [pattern]
+    result = 0
+    print(f'Solve {pattern}')
+    while len(q) != 0:
+        s = q.pop(0)
+        firstSlot = s.find('?')
+        if firstSlot == -1:
+            match_result = regex.fullmatch(s)
+            if match_result != None:
+                result += 1
+        else:
+            opt1 = s[0:firstSlot] + '.' + s[firstSlot+1:]
+            if is_potential(opt1, numbers, hashCount):
+                q.append(opt1)
+            opt2 = s[0:firstSlot] + '#' + s[firstSlot+1:]
+            if is_potential(opt2, numbers, hashCount):
+                q.append(opt2)
+            # print(q)
+    return result
+
 def part1():
     result = 0
     for line in lines:
         [pattern, numberPattern] = line.split(' ')
         numbers = split_ints(numberPattern, ',')
-        hashCount = sum(numbers) - pattern.count('#')
-        slots = pattern.count('?')
-        optionCount = 0
-        regex = buildRegex(numbers)
-        for s in itertools.product('#.', repeat=slots):
-            if s.count('#') != hashCount:
-                continue
-            option = apply(s, pattern)
-            match_result = regex.fullmatch(option)
-            if match_result != None:
-                optionCount += 1
-        # print(f'Fount {optionCount} for {line}')
+        optionCount = solve(pattern, numbers)
+        print(f'Fount {optionCount} for {line}')
         result += optionCount
 
     print(f'Total: {result}')
@@ -63,21 +110,9 @@ def part2():
         # print(f'{x5pattern}')
         # print(f'{x5numberPattern}')
         numbers = split_ints(numberPattern, ',')
-        slots = pattern.count('?')
-        hashCount = sum(numbers) - pattern.count('#')
-        optionCount = 0
-        regex = buildRegex(numbers)
-        for s in itertools.product('#.', repeat=slots):
-            if s.count('#') != hashCount:
-                continue
 
-            # print(f'checking {s}')
-            option = apply(s, pattern)
-            # print(f'checking {s} against {option}')
-            match_result = regex.fullmatch(option)
-            if match_result != None:
-                optionCount += 1
-        print(f'Fount {optionCount} for {line}')
+        optionCount = solve(pattern, numbers)
+        print(f'Found {optionCount} for {line}')
         result += optionCount
 
     print(f'Total: {result}')
