@@ -1,3 +1,4 @@
+import functools
 from aoc_utils import runIt, PuzzleInput, split_ints
 import math
 import re
@@ -33,87 +34,101 @@ def buildRegex(numbers):
     s += r'\.*'
     return re.compile(s)
 
-def is_potential(s: str, numbers: list[int], hashCount: int) -> bool:
-    if s.count('#') > hashCount:
-        return False
-    
-    slot = s.find('?')
-    if slot != -1:
-        # print(f'Trimming {s} to {s[0:slot]}')
-        s = s[0:slot]
-
-
-    blockLen = 0
-    blocks = []
-    for sidx in range(len(s)):
-        if s[sidx] == '#':
-            blockLen += 1
-        elif blockLen > 0:
-            blocks.append(blockLen)
-            blockLen = 0
-    if blockLen > 0:
-        blocks.append(blockLen)
-
-    # print(f'Found {blocks} in {s}')
-    # if there are too many blocks, return false
-    if len(blocks) > len(numbers):
-        return False
-    
-    # if the blocks don't match, return false
-    for i in range(len(blocks)):
-        if blocks[i] > numbers[i]:
-            return False
-            
+def matchesPattern(s: str, pattern: str) -> bool:
+    for i in range(len(s)):
+        if pattern[i] != '?' and s[i] != pattern[i]: return False
     return True
 
 
-def solve(pattern: str, numbers: list[int]) -> int:
-    regex = buildRegex(numbers)
-    hashCount = sum(numbers)
-    q = [pattern]
-    result = 0
-    print(f'Solve {pattern}')
-    while len(q) != 0:
-        s = q.pop(0)
-        firstSlot = s.find('?')
-        if firstSlot == -1:
-            match_result = regex.fullmatch(s)
-            if match_result != None:
-                result += 1
-        else:
-            opt1 = s[0:firstSlot] + '.' + s[firstSlot+1:]
-            if is_potential(opt1, numbers, hashCount):
-                q.append(opt1)
-            opt2 = s[0:firstSlot] + '#' + s[firstSlot+1:]
-            if is_potential(opt2, numbers, hashCount):
-                q.append(opt2)
-            # print(q)
-    return result
+def blockDots(pattern: str, numbers: list[int]) -> int:
+    blocks = ['#' * n for n in numbers]
+    dotCount = len(pattern) - sum(numbers)# - len(blockChunks) + 1
+
+    dotSlots = [0]
+    for i in range(len(blocks)-1) : dotSlots.append(1)
+    dotSlots.append(dotCount - len(blocks) + 1)
+
+    print(f'****** checking pattern {pattern}')
+    count = 0
+    for s in genStr(blocks, dotSlots, pattern):
+        if matchesPattern(s, pattern):
+            count += 1
+            # print(s)
+    return count
+
+def genStr(blocks: list[str], dotSlots: list[int], pattern: str):
+    if len(blocks) == 0:
+        yield ('.' * dotSlots[0])
+    else:
+        dotSlotsCopy = list(dotSlots)
+        while dotSlotsCopy[-1] >= 0:
+
+            prefix = ('.' * dotSlotsCopy[0]) + blocks[0]
+            if matchesPattern(prefix, pattern[:len(prefix)]):
+                suffixes = genStr(blocks[1:], dotSlotsCopy[1:], pattern[len(prefix):])
+                    
+                for s in suffixes:
+                    yield prefix + s
+
+            dotSlotsCopy[0] += 1
+            dotSlotsCopy[-1] -= 1
+
+
+
+
+
+    """
+    ## ### #
+    ##.###.#...
+    ##.###..#..
+    ##.###...#.
+    ##.###....#
+    ##..###.#..
+    ##..###..#.
+    ##..###...#
+    ##...###.#.
+    ##...###..#
+    ##....###.#
+    .##.###.#..
+    .##.###..#.
+    .##.###...#
+    .##..###.#.
+    .##..###..#
+    .##...###.#
+    ..##.###.#.
+    ..##..###.#
+    ...##.###.#
+
+    """
+
 
 def part1():
     result = 0
     for line in lines:
         [pattern, numberPattern] = line.split(' ')
         numbers = split_ints(numberPattern, ',')
-        optionCount = solve(pattern, numbers)
-        print(f'Fount {optionCount} for {line}')
-        result += optionCount
+
+        # print(f'\nCombos for\n{line}')
+        lineOptions = blockDots(pattern, numbers)
+        result += lineOptions
 
     print(f'Total: {result}')
 
 def part2():
     result = 0
     for line in lines:
-        [pattern, numberPattern] = line.split(' ')
-        pattern = pattern * 5
-        numberPattern = ','.join([numberPattern, numberPattern, numberPattern, numberPattern, numberPattern])
+        [pattern1, numberPattern1] = line.split(' ')
+        pattern = '?'.join([pattern1, pattern1, pattern1, pattern1, pattern1])
+        numberPattern = ','.join([numberPattern1, numberPattern1, numberPattern1, numberPattern1, numberPattern1])
         # print(f'{x5pattern}')
         # print(f'{x5numberPattern}')
         numbers = split_ints(numberPattern, ',')
 
-        optionCount = solve(pattern, numbers)
-        print(f'Found {optionCount} for {line}')
-        result += optionCount
+        lineOptions = blockDots(pattern, numbers)
+
+        print(f'{lineOptions} : {pattern1} - {numberPattern1} \n{pattern} {numbers}')
+        print(lineOptions)
+        result += lineOptions
 
     print(f'Total: {result}')
 
