@@ -11,7 +11,7 @@ testInput = """???.### 1,1,3
 ?###???????? 3,2,1"""
 input = PuzzleInput('input-day12.txt', testInput)
 
-lines = input.getInputLines(test=False)
+lines = input.getInputLines(test=True)
 
 def apply(s, pattern) -> str:
     option = ''
@@ -46,12 +46,33 @@ def part1():
             match_result = regex.fullmatch(option)
             if match_result != None:
                 optionCount += 1
-        print(f'Fount {optionCount} for {line}')
+        # print(f'Fount {optionCount} for {line}')
         result += optionCount
 
     print(f'Total: {result}')
 
 def part2():
-    print('nyi')
+    result = 0
+    for line in lines:
+        [pattern, numberPattern] = line.split(' ')
+        pattern = pattern * 5
+        numberPattern = ','.join([numberPattern, numberPattern, numberPattern, numberPattern, numberPattern])
+        # print(f'{x5pattern}')
+        # print(f'{x5numberPattern}')
+        numbers = split_ints(numberPattern, ',')
+        slots = pattern.count('?')
+        optionCount = 0
+        regex = buildRegex(numbers)
+        for s in itertools.product('#.', repeat=slots):
+            print(f'checking {s}')
+            option = apply(s, pattern)
+            # print(f'checking {s} against {option}')
+            match_result = regex.fullmatch(option)
+            if match_result != None:
+                optionCount += 1
+        print(f'Fount {optionCount} for {line}')
+        result += optionCount
+
+    print(f'Total: {result}')
 
 runIt(part1, part2)
