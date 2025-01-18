@@ -11,7 +11,7 @@ testInput = """???.### 1,1,3
 ?###???????? 3,2,1"""
 input = PuzzleInput('input-day12.txt', testInput)
 
-lines = input.getInputLines(test=True)
+lines = input.getInputLines(test=False)
 
 def apply(s, pattern) -> str:
     option = ''
@@ -38,10 +38,13 @@ def part1():
     for line in lines:
         [pattern, numberPattern] = line.split(' ')
         numbers = split_ints(numberPattern, ',')
+        hashCount = sum(numbers) - pattern.count('#')
         slots = pattern.count('?')
         optionCount = 0
         regex = buildRegex(numbers)
         for s in itertools.product('#.', repeat=slots):
+            if s.count('#') != hashCount:
+                continue
             option = apply(s, pattern)
             match_result = regex.fullmatch(option)
             if match_result != None:
@@ -61,10 +64,14 @@ def part2():
         # print(f'{x5numberPattern}')
         numbers = split_ints(numberPattern, ',')
         slots = pattern.count('?')
+        hashCount = sum(numbers) - pattern.count('#')
         optionCount = 0
         regex = buildRegex(numbers)
         for s in itertools.product('#.', repeat=slots):
-            print(f'checking {s}')
+            if s.count('#') != hashCount:
+                continue
+
+            # print(f'checking {s}')
             option = apply(s, pattern)
             # print(f'checking {s} against {option}')
             match_result = regex.fullmatch(option)
