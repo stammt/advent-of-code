@@ -1,7 +1,7 @@
 from aoc_utils import PuzzleInput, runIt
 import math
 import re
-import itertools
+from itertools import groupby
 
 testInput = """#.##..##.
 ..#.##.#.
@@ -18,62 +18,48 @@ testInput = """#.##..##.
 #####.##.
 ..##..###
 #....#..#"""
+
+testInput2 = """.###.#..####..#.#
+.#...#.##########
+#...###..##..#.#.
+#...###..##..#.#.
+.#...#.##########
+.###.#..####..#.#
+..###...#..###..#
+..###...#..####.#
+.###.#..####..#.#
+.#...#.##########
+#...###..##..#.#."""
 input = PuzzleInput('input-day13.txt', testInput)
 
 lines = input.getInputLines(test=False)
 
 def parsePatterns():
-    patterns = []
-    pattern = []
-    for line in lines:
-        if len(line.strip()) == 0:
-            patterns.append(pattern)
-            pattern = []
-        else:
-            pattern.append(line)
-    patterns.append(pattern)
-    return patterns
+    return [list(p) for _,p in groupby(lines, key=lambda x: x != '') if p]
 
-def findHorizontalReflection(p) -> int:
+def findHorizontalReflection(p, ignore=-1) -> int:
     # look for reflection across a horizontal line
     for i in range(len(p) - 1):
-        if p[i] == p[i+1]:
-            # see if the reflection extends in both directions
-            above = i-1
-            below = i+2
-            found = True
-            while above >= 0 and below < len(p):
-                if (p[above] != p[below]):
-                    found = False
-                    break
-                above -= 1
-                below += 1
-            if found:
-                return i + 1
+        if i+1 == ignore:
+            continue
+        dy = min(i + 1, len(p) - i - 1)
+        if all([p[above] == p[below] for (above, below) in [(i-x, i+x+1) for x in range(dy)]]):
+            return i+1
+            
     return -1
 
-def findVerticalReflection(p) -> int:
+def findVerticalReflection(p, ignore=-1) -> int:
+    def col(i, p):
+        return [line[i] for line in p]
+
     # look for reflection across a vertical line
     for i in range(len(p[0]) - 1):
-        col1 = [line[i] for line in p]
-        col2 = [line[i+1] for line in p]
-        
-        if col1 == col2:
-            # see if the reflection extends in both directions
-            left = i-1
-            right = i+2
-            found = True
-            while left >= 0 and right < len(p[0]):
-                col1 = [line[left] for line in p]
-                col2 = [line[right] for line in p]
-                if (col1 != col2):
-                    found = False
-                    break
-                left -= 1
-                right += 1
-            if found:
-                return i + 1
-                break
+        if i+1 == ignore:
+            continue
+
+        dx = min(i + 1, len(p[0]) - i - 1)
+        if all([col(east, p) == col(west, p) for (east, west) in [(i-x, i+x+1) for x in range(dx)]]):
+            return i+1
     return -1
 
 def smudged(p):
@@ -107,30 +93,21 @@ def part2():
     horizontalCount = 0
     verticalCount = 0
 
-    # print('\n'.join(patterns[0]))
-    # print('Smudged:\n')
-    # for s in smudged(patterns[0]):
-    #     print('\n'.join(s))
-    #     print('\n')
-
     for p in patterns:
         origHoriz = findHorizontalReflection(p)
         origVert = findVerticalReflection(p)
         for s in smudged(p):
-            h = findHorizontalReflection(s)
-            if h != -1 and h != origHoriz:
-                # print(f'Found horizontal line {h} in smudged\n{'\n'.join(s)}\nfrom\n{'\n'.join(p)}\n')
+            h = findHorizontalReflection(s, origHoriz)
+            if h != -1:
                 horizontalCount += h
                 break
             else:
-                v = findVerticalReflection(s)
-                if v != -1 and v != origVert:
-                    # print(f'Found vertical line {h} in smudged\n{s}\nfrom\n{p}\n')
+                v = findVerticalReflection(s, origVert)
+                if v != -1:
                     verticalCount += v
                     break
 
     total = verticalCount + (100 * horizontalCount)
-    # 22297 too low
     print(f'Total {total} : {verticalCount} vertical lines, {horizontalCount} horizontal lines')
 
 runIt(part1, part2)
