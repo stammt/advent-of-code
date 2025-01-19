@@ -62,6 +62,7 @@ def findVerticalReflection(p, ignore=-1) -> int:
             return i+1
     return -1
 
+# return an iterator of copies of p with one character "flipped"
 def smudged(p):
     for y in range(len(p)):
         for x in range(len(p[y])):
