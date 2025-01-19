@@ -76,6 +76,13 @@ def findVerticalReflection(p) -> int:
                 break
     return -1
 
+def smudged(p):
+    for y in range(len(p)):
+        for x in range(len(p[y])):
+            pcopy = [l for l in p]
+            s = p[y][x]
+            pcopy[y] = pcopy[y][0:x] + ('#' if s == '.' else '.') + pcopy[y][x+1:]
+            yield pcopy
 
 def part1():
     patterns = parsePatterns()
@@ -95,6 +102,35 @@ def part1():
     print(f'Total {total} : {verticalCount} vertical lines, {horizontalCount} horizontal lines')
 
 def part2():
-    print('nyi')
+    patterns = parsePatterns()
+
+    horizontalCount = 0
+    verticalCount = 0
+
+    # print('\n'.join(patterns[0]))
+    # print('Smudged:\n')
+    # for s in smudged(patterns[0]):
+    #     print('\n'.join(s))
+    #     print('\n')
+
+    for p in patterns:
+        origHoriz = findHorizontalReflection(p)
+        origVert = findVerticalReflection(p)
+        for s in smudged(p):
+            h = findHorizontalReflection(s)
+            if h != -1 and h != origHoriz:
+                # print(f'Found horizontal line {h} in smudged\n{'\n'.join(s)}\nfrom\n{'\n'.join(p)}\n')
+                horizontalCount += h
+                break
+            else:
+                v = findVerticalReflection(s)
+                if v != -1 and v != origVert:
+                    # print(f'Found vertical line {h} in smudged\n{s}\nfrom\n{p}\n')
+                    verticalCount += v
+                    break
+
+    total = verticalCount + (100 * horizontalCount)
+    # 22297 too low
+    print(f'Total {total} : {verticalCount} vertical lines, {horizontalCount} horizontal lines')
 
 runIt(part1, part2)
