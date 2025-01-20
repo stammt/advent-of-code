@@ -1,5 +1,6 @@
 
 from collections import defaultdict
+from heapq import heappop, heappush
 import math
 import re
 import itertools
@@ -29,25 +30,28 @@ testInput2 = r"""111111111111
 
 input = PuzzleInput('input-day17.txt', testInput)
 
-lines = input.getInputLines(test=True)
+lines = input.getInputLines(test=False)
 
 
 
 def lavA_star(start, goal, h, min_steps, max_steps, grid: Grid) -> int: # list[Point]:
-    openSet = {(start, South), (start, East)} # TODO: use a priority queue or heap instead
+    openSet = []
+    hStart = h(start)
+    heappush(openSet, (hStart, (start, South)))
+    heappush(openSet, (hStart, (start, East)))
 
-    cameFrom: dict[(Point, Point), (Point, Point)] = dict()
+    cameFrom: dict[tuple[Point, Point], tuple[Point, Point]] = dict()
 
     # For node n, gScore[n] is the currently known cost of the cheapest path from start to n.
-    gScore: dict[(Point, Point), int]  = defaultdict(lambda: sys.maxsize)
+    gScore: dict[tuple[Point, Point], int]  = defaultdict(lambda: sys.maxsize)
     gScore[(start, South)] = 0
     gScore[(start, East)] = 0
 
     # For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
     # how cheap a path could be from start to finish if it goes through n.
-    fScore: dict[(Point, Point), int] = defaultdict(lambda: sys.maxsize)
-    fScore[(start, South)] = h(start)
-    fScore[(start, East)] = h(start)
+    fScore: dict[tuple[Point, Point], int] = defaultdict(lambda: sys.maxsize)
+    fScore[(start, South)] = hStart
+    fScore[(start, East)] = hStart
 
     # Turn L/R from current facing, and take as many steps as possible treating each as a "neighbor"
     def turn_and_step(dir, current):
@@ -69,15 +73,15 @@ def lavA_star(start, goal, h, min_steps, max_steps, grid: Grid) -> int: # list[P
                     gScore[v] = tentative_gScore
                     fScore[v] = tentative_gScore + h(v[0])
                     if v not in openSet:
-                        openSet.add(v)
+                        heappush(openSet, (fScore[v], v))
 
     while len(openSet) > 0:
-        current = min([n for n in openSet if n in fScore], key=lambda x: fScore[x])
+        current = heappop(openSet)[1]
         if (current[0] == goal):
             # print_path(current, cameFrom, grid)
             return gScore[current] # reconstruct_path(goal, cameFrom)
         
-        openSet.remove(current)
+        # openSet.remove(current)
 
         turn_and_step('L', current)
         turn_and_step('R', current)
@@ -97,7 +101,7 @@ def part1():
     goal = (grid.size[0] - 1, grid.size[1] - 1)
     heatLoss = lavA_star((0, 0), goal, lambda x: manhattan_distance(x, goal), 1, 3, grid)
     print(f'Heat loss: {heatLoss} ')
-    # got answer 956 in 231 seconds with dijkstra, 10 seconds with modified A*
+    # got answer 956 in 231 seconds with dijkstra, 10 seconds with modified A*, 2.5seconds using pririty queue in A*
     # (test took 17ms, 6ms with A*)
 
 def part2():
@@ -105,6 +109,6 @@ def part2():
     goal = (grid.size[0] - 1, grid.size[1] - 1)
     heatLoss = lavA_star((0, 0), goal, lambda x: manhattan_distance(x, goal), 4, 10, grid)
     print(f'Heat loss: {heatLoss} ')
-    # got answer 1106 in 31 seconds with modified A*
+    # got answer 1106 in 31 seconds with modified A*, 10 seconds using priority queue in A*
 
 runIt(part1, part2)
