@@ -22,7 +22,7 @@ testInput = r"""2413432311323
 4322674655533"""
 input = PuzzleInput('input-day17.txt', testInput)
 
-lines = input.getInputLines(test=True)
+lines = input.getInputLines(test=False)
 
 
 def lava_dijkstra(start, goal, grid: Grid) -> int:
@@ -77,14 +77,74 @@ def lava_dijkstra(start, goal, grid: Grid) -> int:
 
     return -1
 
+def lavA_star(start, goal, h, grid: Grid) -> int: # list[Point]:
+    openSet = {(start, South), (start, East)} # TODO: use a priority queue or heap instead
+
+    cameFrom: dict[(Point, Point), (Point, Point)] = dict()
+
+    # For node n, gScore[n] is the currently known cost of the cheapest path from start to n.
+    gScore: dict[(Point, Point), int]  = defaultdict(lambda: sys.maxsize)
+    gScore[(start, South)] = 0
+    gScore[(start, East)] = 0
+
+    # For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
+    # how cheap a path could be from start to finish if it goes through n.
+    fScore: dict[(Point, Point), int] = defaultdict(lambda: sys.maxsize)
+    fScore[(start, South)] = h(start)
+    fScore[(start, East)] = h(start)
+
+    while len(openSet) > 0:
+        current = min([n for n in openSet if n in fScore], key=lambda x: fScore[x])
+        if (current[0] == goal):
+            return gScore[current] # reconstruct_path(goal, cameFrom)
+        
+        openSet.remove(current)
+
+        rfacing = make_turn(current[1], 'R')
+        rloss = 0
+        pr = current[0]
+        for i in range(1, 4):
+            pr = add(pr, rfacing)
+            if pr in grid:
+                v = (pr, rfacing)
+                rloss += int(grid[pr])
+
+                tentative_gScore = gScore[current] + rloss
+                if tentative_gScore < gScore[v]:
+                    cameFrom[v] = current
+                    gScore[v] = tentative_gScore
+                    fScore[v] = tentative_gScore + h(v[0])
+                    if v not in openSet:
+                        openSet.add(v)
+
+        lfacing = make_turn(current[1], 'L')
+        lloss = 0
+        pl = current[0]
+        for i in range(1, 4):
+            pl = add(pl, lfacing)
+            if pl in grid:
+                v = (pl, lfacing)
+                lloss += int(grid[pl])
+
+                tentative_gScore = gScore[current] + lloss
+                if tentative_gScore < gScore[v]:
+                    cameFrom[v] = current
+                    gScore[v] = tentative_gScore
+                    fScore[v] = tentative_gScore + h(v[0])
+                    if v not in openSet:
+                        openSet.add(v)
+
+    return -1
+
 
 def part1():
     grid = Grid(lines)
     goal = (grid.size[0] - 1, grid.size[1] - 1)
-    heatLoss = lava_dijkstra((0, 0), goal, grid)
+    # heatLoss = lava_dijkstra((0, 0), goal, grid)
+    heatLoss = lavA_star((0, 0), goal, lambda x: manhattan_distance(x, goal), grid)
     print(f'Heat loss: {heatLoss} ')
-    # got answer 956 in 231 seconds...
-    # (test took 17ms)
+    # got answer 956 in 231 seconds with dijkstra, 10 seconds with modified A*
+    # (test took 17ms, 6ms with A*)
 
 def part2():
     print('nyi')
