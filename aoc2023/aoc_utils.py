@@ -69,6 +69,11 @@ def turn(dir:Point, turn_direction:str) -> Point:
 def manhattan_distance(a: Point, b: Point) -> int:
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
+def make_turn(facing: Point, turn: str) -> Point:
+    """Turn 90 degrees left or right. `turn` can be 'L' or 'Left' or 'R' or 'Right' or lowercase."""
+    (x, y) = facing
+    return (y, -x) if turn[0] in ('L', 'l') else (-y, x)
+
 class Grid(dict):
     def __init__(self, lines) -> None:
         if isinstance(lines, dict):

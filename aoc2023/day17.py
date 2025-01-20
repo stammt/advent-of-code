@@ -5,7 +5,7 @@ import re
 import itertools
 import sys
 
-from aoc_utils import Direction, reconstruct_path, runIt, PuzzleInput, Grid, Point, add, sub, cardinal_directions, manhattan_distance
+from aoc_utils import Direction, make_turn, reconstruct_path, runIt, PuzzleInput, Grid, Point, add, sub, mul, cardinal_directions, manhattan_distance, North, South, East, West
 
 testInput = r"""2413432311323
 3215453535623
@@ -24,75 +24,67 @@ input = PuzzleInput('input-day17.txt', testInput)
 
 lines = input.getInputLines(test=True)
 
-# do a dfs, pass last two nodes through to check neighbors, memoize the best so far so we can cut off branches
-def dfs(start: Point, goal: Point, grid: Grid) -> int:
-    q = [(start, None, None, None, 0)]
-    bestLosses = dict()
 
-    result = sys.maxsize
-    # resultPath = []
+def lava_dijkstra(start, goal, grid: Grid) -> int:
+    # treat each node as a tuple of (p, facing), neighbors are 1,2,3 to right and left
+    prev = dict()
+
+    q = {(p, dir) for p in grid.keys() for dir in cardinal_directions}
+    dist = {p: sys.maxsize for p in q}
+    dist[(start, East)] = 0
+    dist[(start, South)] = 0
+
     while len(q) > 0:
-        current = q.pop()
+        u = min([n for n in q], key=lambda x: dist[x])
+        q.remove(u)
 
-        k = (current[0], current[1], current[2], current[3])
-        if k in bestLosses and bestLosses[k] < current[4]:
-            # print(f'Skipping {k}')
-            continue
-        
-        bestLosses[k] = current[4]
+        if u[0] == goal:
+            return dist[u]
 
-        lastDir = current[1]
-        lastDir2 = current[2]
-        lastDir3 = current[3]
-        loss = current[4]
-        dirs = set(cardinal_directions)
-        if lastDir != None:
-            # print(f'lastDir {lastDir} removing {sub((0, 0), lastDir)}')
-            dirs.remove(sub((0, 0), lastDir)) # don't go backwards
-            if (lastDir == lastDir2 and lastDir == lastDir3): # don't keep going more than 3 segments
-                dirs.remove(lastDir)
+        p = u[0]
+        facing = u[1]
 
-        neighbors = grid.neighbors(current[0], dirs)
-        neighbors = sorted(neighbors, key=lambda x: manhattan_distance(x, goal), reverse=True)
-        # print(f'Checking neighbors of {current[0]}: {neighbors}')
-        # result = sys.maxsize
-        for n in neighbors:
-            if n == goal:
-                print(f'Reached goal with {loss + int(grid[n])}')
-                if result > loss + int(grid[n]):
-                    result = loss + int(grid[n])
-                    # resultPath.append(n)
-                # result = min(result, loss + int(grid[n]))
-            else:
-                d = sub(n, current[0])
-                # p = list(current[5])
-                # p.append(n)
-                nk = (n, d, lastDir, lastDir2)
-                if nk not in bestLosses or bestLosses[nk] > loss + int(grid[n]):
-                    bestLosses[nk] = loss + int(grid[n])
+        # neighbors are 1, 2, 3 steps to the right or left
+        rfacing = make_turn(facing, 'R')
+        rloss = 0
+        pr = p
+        for i in range(1, 4):
+            pr = add(pr, rfacing)
+            if pr in grid:
+                v = (pr, rfacing)
+                rloss += int(grid[pr])
 
-                q.append((n, d, lastDir, lastDir2, loss + int(grid[n])))
-        
-    # print(f'Final result {result} with {resultPath}')
-    # overlay = dict()
-    # for p in resultPath:
-    #     overlay[p] = '*'
-    # print(grid.to_string(overlay))
-    return result
+                alt = dist[u] + rloss
+                if alt < dist[v]:
+                    dist[v] = alt
+                    prev[v] = u
+
+        # rneighbors = [(pr, rfacing) for pr in [add(p, mul(rfacing, i)) for i in range(1, 4)] if pr in grid]
+        lfacing = make_turn(facing, 'L')
+        # lneighbors = [(pl, lfacing) for pl in [add(p, mul(lfacing, i)) for i in range(1, 4)] if pl in grid]
+        lloss = 0
+        pl = p
+        for i in range(1, 4):
+            pl = add(pl, lfacing)
+            if (pl in grid):
+                v = (pl, lfacing)
+                lloss += int(grid[pl])
+
+                alt = dist[u] + lloss
+                if alt < dist[v]:
+                    dist[v] = alt
+                    prev[v] = u
+
+    return -1
 
 
 def part1():
     grid = Grid(lines)
     goal = (grid.size[0] - 1, grid.size[1] - 1)
-    print(f'Goal: {goal} ')
-    # path = lavA_star((0, 0), goal, lambda p: manhattan_distance(p, goal), grid)
-    # path = lava_dijkstra((0, 0), goal, grid)
-    heatLoss = dfs((0, 0), goal, grid)
+    heatLoss = lava_dijkstra((0, 0), goal, grid)
     print(f'Heat loss: {heatLoss} ')
-
-    ## 1526 too high
-    # overlay = {p: '*' for p in path}
-    # print(grid.to_string(overlay))
+    # got answer 956 in 231 seconds...
+    # (test took 17ms)
 
 def part2():
     print('nyi')
