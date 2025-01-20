@@ -20,64 +20,20 @@ testInput = r"""2413432311323
 1224686865563
 2546548887735
 4322674655533"""
+
+testInput2 = r"""111111111111
+999999999991
+999999999991
+999999999991
+999999999991"""
+
 input = PuzzleInput('input-day17.txt', testInput)
 
-lines = input.getInputLines(test=False)
+lines = input.getInputLines(test=True)
 
 
-def lava_dijkstra(start, goal, grid: Grid) -> int:
-    # treat each node as a tuple of (p, facing), neighbors are 1,2,3 to right and left
-    prev = dict()
 
-    q = {(p, dir) for p in grid.keys() for dir in cardinal_directions}
-    dist = {p: sys.maxsize for p in q}
-    dist[(start, East)] = 0
-    dist[(start, South)] = 0
-
-    while len(q) > 0:
-        u = min([n for n in q], key=lambda x: dist[x])
-        q.remove(u)
-
-        if u[0] == goal:
-            return dist[u]
-
-        p = u[0]
-        facing = u[1]
-
-        # neighbors are 1, 2, 3 steps to the right or left
-        rfacing = make_turn(facing, 'R')
-        rloss = 0
-        pr = p
-        for i in range(1, 4):
-            pr = add(pr, rfacing)
-            if pr in grid:
-                v = (pr, rfacing)
-                rloss += int(grid[pr])
-
-                alt = dist[u] + rloss
-                if alt < dist[v]:
-                    dist[v] = alt
-                    prev[v] = u
-
-        # rneighbors = [(pr, rfacing) for pr in [add(p, mul(rfacing, i)) for i in range(1, 4)] if pr in grid]
-        lfacing = make_turn(facing, 'L')
-        # lneighbors = [(pl, lfacing) for pl in [add(p, mul(lfacing, i)) for i in range(1, 4)] if pl in grid]
-        lloss = 0
-        pl = p
-        for i in range(1, 4):
-            pl = add(pl, lfacing)
-            if (pl in grid):
-                v = (pl, lfacing)
-                lloss += int(grid[pl])
-
-                alt = dist[u] + lloss
-                if alt < dist[v]:
-                    dist[v] = alt
-                    prev[v] = u
-
-    return -1
-
-def lavA_star(start, goal, h, grid: Grid) -> int: # list[Point]:
+def lavA_star(start, goal, h, min_steps, max_steps, grid: Grid) -> int: # list[Point]:
     openSet = {(start, South), (start, East)} # TODO: use a priority queue or heap instead
 
     cameFrom: dict[(Point, Point), (Point, Point)] = dict()
@@ -93,60 +49,62 @@ def lavA_star(start, goal, h, grid: Grid) -> int: # list[Point]:
     fScore[(start, South)] = h(start)
     fScore[(start, East)] = h(start)
 
+    # Turn L/R from current facing, and take as many steps as possible treating each as a "neighbor"
+    def turn_and_step(dir, current):
+        facing = make_turn(current[1], dir)
+        loss = 0
+        p = current[0]
+        for i in range(1, max_steps+1):
+            p = add(p, facing)
+            if p not in grid:
+                break
+
+            v = (p, facing)
+            loss += int(grid[p])
+
+            if (i >= min_steps):
+                tentative_gScore = gScore[current] + loss
+                if tentative_gScore < gScore[v]:
+                    cameFrom[v] = current
+                    gScore[v] = tentative_gScore
+                    fScore[v] = tentative_gScore + h(v[0])
+                    if v not in openSet:
+                        openSet.add(v)
+
     while len(openSet) > 0:
         current = min([n for n in openSet if n in fScore], key=lambda x: fScore[x])
         if (current[0] == goal):
+            # print_path(current, cameFrom, grid)
             return gScore[current] # reconstruct_path(goal, cameFrom)
         
         openSet.remove(current)
 
-        rfacing = make_turn(current[1], 'R')
-        rloss = 0
-        pr = current[0]
-        for i in range(1, 4):
-            pr = add(pr, rfacing)
-            if pr in grid:
-                v = (pr, rfacing)
-                rloss += int(grid[pr])
-
-                tentative_gScore = gScore[current] + rloss
-                if tentative_gScore < gScore[v]:
-                    cameFrom[v] = current
-                    gScore[v] = tentative_gScore
-                    fScore[v] = tentative_gScore + h(v[0])
-                    if v not in openSet:
-                        openSet.add(v)
-
-        lfacing = make_turn(current[1], 'L')
-        lloss = 0
-        pl = current[0]
-        for i in range(1, 4):
-            pl = add(pl, lfacing)
-            if pl in grid:
-                v = (pl, lfacing)
-                lloss += int(grid[pl])
-
-                tentative_gScore = gScore[current] + lloss
-                if tentative_gScore < gScore[v]:
-                    cameFrom[v] = current
-                    gScore[v] = tentative_gScore
-                    fScore[v] = tentative_gScore + h(v[0])
-                    if v not in openSet:
-                        openSet.add(v)
+        turn_and_step('L', current)
+        turn_and_step('R', current)
 
     return -1
 
+def print_path(goal, cameFrom, grid):
+    overlay = dict()
+    p = goal
+    while p in cameFrom:
+        overlay[p[0]] = '*'
+        p = cameFrom[p]
+    print(grid.to_string(overlay))
 
 def part1():
     grid = Grid(lines)
     goal = (grid.size[0] - 1, grid.size[1] - 1)
-    # heatLoss = lava_dijkstra((0, 0), goal, grid)
-    heatLoss = lavA_star((0, 0), goal, lambda x: manhattan_distance(x, goal), grid)
+    heatLoss = lavA_star((0, 0), goal, lambda x: manhattan_distance(x, goal), 1, 3, grid)
     print(f'Heat loss: {heatLoss} ')
     # got answer 956 in 231 seconds with dijkstra, 10 seconds with modified A*
     # (test took 17ms, 6ms with A*)
 
 def part2():
-    print('nyi')
+    grid = Grid(lines)
+    goal = (grid.size[0] - 1, grid.size[1] - 1)
+    heatLoss = lavA_star((0, 0), goal, lambda x: manhattan_distance(x, goal), 4, 10, grid)
+    print(f'Heat loss: {heatLoss} ')
+    # got answer 1106 in 31 seconds with modified A*
 
 runIt(part1, part2)
