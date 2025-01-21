@@ -1,4 +1,5 @@
 from operator import mul
+from typing import Tuple
 from aoc_utils import PuzzleInput, runIt
 import functools
 import math
@@ -82,28 +83,23 @@ def part1():
 
     print(f'{len(accepted)} accepted, {len(rejected)} rejected')
 
-    total = sum([p['x'] + p['m'] + p['a'] + p['s'] for p in accepted])
+    total = sum(p[x] for p in accepted for x in 'xmas')
     print(f'Total: {total}')
 
 def solve(workflow_name: str, ranges: dict[str, range], workflows) -> int:
     # for each rule, recurse, with the ranges restricted for that rule
     # if we hit 'A', return the final range
-    # if multiple paths return from 'A', merge the ranges - how to deal with gaps?
     if workflow_name == 'A':
-        print(f'Reached A  with {ranges}')
-        return math.prod(len(c) for c in [ranges[k] for k in ['x', 'm', 'a', 's']])
+        return math.prod(len(r) for r in [ranges[x] for x in 'xmas'])
     elif workflow_name == 'R':
         return 0
 
     count = 0
-
     workflow = workflows[workflow_name]
-    # print(f'Evaluating workflow {workflow_name} : {workflow} : {ranges}')
-    updated = dict(ranges)
-    for rule in workflow:            
+    for rule in workflow: 
         if len(rule) == 1:
             # fallback rule
-            count += solve(rule[0], updated, workflows)
+            count += solve(rule[0], ranges, workflows)
         else:
             a = rule[0]
             r = ranges[a]
@@ -113,22 +109,23 @@ def solve(workflow_name: str, ranges: dict[str, range], workflows) -> int:
             r_inverse = r
             if op == '>':
                 # remove a <= b from the range
-                r_inverse = range(r.start, b+1)
-                r = range(b + 1, r.stop)
+                r_inverse = range(max(1, r.start), min(b+1, r.stop))
+                r = range(max(r.start, b + 1), min(4001, r.stop))
             elif op == '<':
                 # remove a >= b from the range
-                r_inverse = range(b, r.stop)
-                r = range(r.start, b)
+                r_inverse = range(max(r.start, b), min(4001, r.stop))
+                r = range(max(1, r.start), min(r.stop, b))
+            else:
+                print(f'WTF op {op}')
 
-            # updated = dict(ranges)
-
-            flow_rules = dict(updated)
+            flow_rules = dict(ranges)
             flow_rules[a] = r
             count += solve(rule[3], flow_rules, workflows)
 
-            updated[a] = r_inverse # needs to be inverse of this rule
+            ranges[a] = r_inverse # needs to be inverse of this rule to pass through
 
     return count
+
 
 
 def part2():
@@ -136,11 +133,9 @@ def part2():
     workflows = parse_workflows(sections[0])
 
     # Start with 'in', range(1,4001) for each letter, find all paths to 'A' and find the union of their rules?
-    ranges = {k: range(1, 4001) for k in ['x', 'm', 'a', 's']}
-    # start = workflows['in']
+    ranges = {k: range(1, 4001) for k in 'xmas'}
     count = solve('in', ranges, workflows)
 
-    # 196723013358875 too high
     print(f'Count {count}')
 
 runIt(part1, part2)
