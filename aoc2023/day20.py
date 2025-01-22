@@ -1,4 +1,4 @@
-import aoc_utils
+from aoc_utils import runIt, PuzzleInput
 import functools
 import math
 import re
@@ -15,7 +15,7 @@ testInput = r"""broadcaster -> a
 &inv -> b
 %b -> con
 &con -> output"""
-input = aoc_utils.PuzzleInput('input/input-day20.txt', testInput)
+input = PuzzleInput('input-day20.txt', testInput)
 
 lines = input.getInputLines(test=False)
 
@@ -33,7 +33,7 @@ def areModulesInInitialState(modules):
     return True
 
 
-def part1(lines):
+def part1():
     # Module is a dict with keys type, [destinations]
     # Track modules by name
     modules = {}
@@ -79,7 +79,7 @@ def part1(lines):
             pulse = q[0]
             del q[0]
 
-            print(f'{pulse['source']} -{'high' if pulse['high'] else 'low'}-> {pulse['destination']}')
+            # print(f'{pulse['source']} -{'high' if pulse['high'] else 'low'}-> {pulse['destination']}')
 
             if (pulse['high']):
                 highPulseCount += 1
@@ -122,9 +122,9 @@ def part1(lines):
         print(f'Never got back to initial state after {buttonPushes}')
         print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
 
-def part2(lines):
+def part2():
     # Starting with the rx module, work backwards to find the sequence of
     # pulses that would have sent it a single low pulse.
     print('huh')
 
-part2(lines)
+runIt(part1, part2)
