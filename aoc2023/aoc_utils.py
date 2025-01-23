@@ -90,12 +90,12 @@ class Grid(dict):
     def isInRange(self, pos) -> bool:
         return pos[1] >= 0 and pos[1] < self.size[1] and pos[0] >= 0 and pos[0] < self.size[0]
     
-    def findAll(self, val:str) -> list[Point]:
-        return [p for p in self if self[p] == val]
+    def findAll(self, val:str) -> set[Point]:
+        return {p for p in self if self[p] == val}
     
     def find(self, val:str) -> Union[Point, None]:
         all = self.findAll(val)
-        if (len(all) > 0): return all[0]
+        if (len(all) > 0): return all.pop()
         return None
     
     def neighbors(self, pos:Point, dirs = cardinal_directions) -> list[Point]:
