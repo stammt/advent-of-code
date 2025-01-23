@@ -1,3 +1,4 @@
+from collections import defaultdict, deque, namedtuple
 from aoc_utils import runIt, PuzzleInput
 import functools
 import math
@@ -19,108 +20,75 @@ input = PuzzleInput('input-day20.txt', testInput)
 
 lines = input.getInputLines(test=False)
 
-def areModulesInInitialState(modules):
-    for m in modules:
-        if modules[m]['type'] == '&':
-            # Conjunction is in initial state if all memories are low (False)
-            mem = modules[m]['memory']
-            if len(list(filter(lambda x: mem[x] == True, mem))) > 0:
-                return False
-        elif modules[m]['type'] == '%':
-            # FlipFlop is in initial state if it is off (False)
-            if modules[m]['on']:
-                return False
-    return True
-
+FLIPFLOP = '%'
+STATE = 'state'
+CONJUNCTION = '&'
+Module = namedtuple('Module', ['type', 'state', 'outputs'])
 
 def part1():
-    # Module is a dict with keys type, [destinations]
-    # Track modules by name
-    modules = {}
+
+    broadcaster = []
+    # dict of module name -> tuple of type, state, destinations
+    modules: dict[str:tuple(str, dict[str, bool], list[str])] = {}
+    conjnction_inputs = defaultdict(list)
     for line in lines:
         moduleStr, destinationsStr = line.split(' -> ')
         name = moduleStr if moduleStr == "broadcaster" else moduleStr[1:]
         type = moduleStr if moduleStr == "broadcaster" else moduleStr[:1]
         destinations = destinationsStr.split(", ")
-        modules[name] = {'type': type, 'destinations': destinations}
+        if name == "broadcaster":
+            broadcaster = destinations
+        else:
+            modules[name] = Module(type, defaultdict(bool), destinations)
+        for d in destinations:
+            conjnction_inputs[d].append(name)
 
-    # Init conjunction modules to remember a low pulse from each input
-    conjunctionModules = filter(lambda x: modules[x]['type'] == '&', modules)
-    for module in conjunctionModules:
-        inputs = filter(lambda x: module in modules[x]['destinations'], modules)
-        mem = {}
-        for i in inputs:
-            mem[i] = False
-        modules[module]['memory'] = mem
-
-    # Init flip-flop modules to be off
-    flipFlopModules = filter(lambda x: modules[x]['type'] == '%', modules)
-    for module in flipFlopModules:
-        modules[module]['on'] = False
-
-    print(f'Sanity check: initial state is {areModulesInInitialState(modules)}')
-
+    # Initialize the inputs of the conjunctions to False
+    for name in conjnction_inputs.keys():
+        if name in modules and modules[name][0] == CONJUNCTION:
+            for i in conjnction_inputs[name]:
+                modules[name][1][i] = False
 
     lowPulseCount = 0
     highPulseCount = 0
-    buttonPushes = 0
-    buttonPushesUntilInitialState = -1
+    # Queue of pulses as a tuple (high/low, sender, receiver)
+    q = deque()
+    for pushes in range(1000):
+        lowPulseCount += 1 # button sends a low pulse
+        q.extend([(False, 'broadcaster', m) for m in broadcaster])
 
-    # keep going until we get back to the initial state
-    while buttonPushes < 1000:
-        if buttonPushes > 0 and areModulesInInitialState(modules):
-            buttonPushesUntilInitialState = buttonPushes
-            break
+        while q:
+            pulse = q.popleft()
+            # print(f'{pulse[1]} -{'high' if pulse[0] else 'low'}-> {pulse[2]}')
 
-        buttonPushes += 1
-
-        q = [{'high': False, 'source': 'button', 'destination': 'broadcaster'}]
-        while len(q) > 0:
-            pulse = q[0]
-            del q[0]
-
-            # print(f'{pulse['source']} -{'high' if pulse['high'] else 'low'}-> {pulse['destination']}')
-
-            if (pulse['high']):
+            if (pulse[0]):
                 highPulseCount += 1
             else:
                 lowPulseCount += 1
 
-            if pulse['destination'] not in modules:
+            if pulse[2] not in modules:
                 continue
 
-            module = modules[pulse['destination']]
+            receiver = modules[pulse[2]]
             sendPulse = None
-            if module['type'] == 'broadcaster':
-                sendPulse = {'high': pulse['high']}
-            elif module['type'] == '%':
+
+            if receiver.type == FLIPFLOP:
                 # flip-flop
-                if not pulse['high']:
-                    module['on'] = not module['on']
-                    sendPulse = {'high': module['on']}
-            elif module['type'] == '&':
+                if pulse[0] == False:
+                    receiver.state[STATE] = not receiver.state[STATE]
+                    sendPulse = receiver[1][STATE]
+            else:
                 # conjunction
-                mem = module['memory']
-                mem[pulse['source']] = pulse['high']
-                allHigh = len(list(filter(lambda x: mem[x] == False, mem))) == 0
-                sendPulse = {'high': not allHigh}
+                receiver.state[pulse[1]] = pulse[0]
+                # If any inputs are low, send a high pulse
+                sendPulse = len(receiver.state) == 0 or not all(receiver.state.values())
 
 
             if sendPulse != None:
-                for d in module['destinations']:
-                    p = sendPulse.copy()
-                    p['destination'] = d
-                    p['source'] = pulse['destination']
-                    q.append(p)
+                for d in receiver.outputs:
+                    q.append((sendPulse, pulse[2], d))
 
-    if (buttonPushesUntilInitialState > 0):
-        print(f'Reached initial state after {buttonPushesUntilInitialState}')
-        print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
-        m = 1000 / buttonPushesUntilInitialState
-        print(f'Total: {(m * lowPulseCount) * (m * highPulseCount)} (m={m})')
-    else:
-        print(f'Never got back to initial state after {buttonPushes}')
-        print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
+    print(f'{highPulseCount} high pulses * {lowPulseCount} low pulses = {lowPulseCount * highPulseCount}')
 
 def part2():
     # Starting with the rx module, work backwards to find the sequence of
