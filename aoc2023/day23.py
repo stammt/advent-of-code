@@ -1,10 +1,10 @@
-import aoc_utils
+from aoc_utils import PuzzleInput, runIt, Point, cardinal_directions, add, Grid, North, South, East, West, reconstruct_path, manhattan_distance
 import functools
 import math
 import re
 import itertools
 import sys
-from collections import Counter
+from collections import Counter, defaultdict, deque
 
 testInput = r"""#.#####################
 #.......#########...###
@@ -29,113 +29,99 @@ testInput = r"""#.#####################
 #.###.###.#.###.#.#v###
 #.....###...###...#...#
 #####################.#"""
-input = aoc_utils.PuzzleInput('input/input-day23.txt', testInput)
+input = PuzzleInput('input-day23.txt', testInput)
 
 lines = input.getInputLines(test=False)
 
+def neighbor_dirs(c):
+    if c == '.': return cardinal_directions
+    elif c == '^': return {North}
+    elif c == 'v': return {South}
+    elif c == '>': return {East}
+    else: return {West}
 
-def getNextSteps(pos, visited, lines):
-    steps = []
-    if (pos[0] > 0):
-        candidate = (pos[0] - 1, pos[1])
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and (val == '.' or val == '<'):
-            steps.append(candidate)
-    if (pos[0] < len(lines[0]) - 1):
-        candidate = (pos[0] + 1, pos[1])
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and (val == '.' or val == '>'):
-            steps.append(candidate)
-    if (pos[1] > 0):
-        candidate = (pos[0], pos[1] - 1)
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and (val == '.' or val == '^'):
-            steps.append(candidate)
-    if (pos[1] < len(lines) - 1):
-        candidate = (pos[0], pos[1] + 1)
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and (val == '.' or val == 'v'):
-            steps.append(candidate)
-    return steps
 
-def getNextStepsPart2(pos, visited, lines):
-    steps = []
-    if (pos[0] > 0):
-        candidate = (pos[0] - 1, pos[1])
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and val != '#':
-            steps.append(candidate)
-    if (pos[0] < len(lines[0]) - 1):
-        candidate = (pos[0] + 1, pos[1])
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and val != '#':
-            steps.append(candidate)
-    if (pos[1] > 0):
-        candidate = (pos[0], pos[1] - 1)
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and val != '#':
-            steps.append(candidate)
-    if (pos[1] < len(lines) - 1):
-        candidate = (pos[0], pos[1] + 1)
-        val = lines[candidate[1]][candidate[0]]
-        if candidate not in visited and val != '#':
-            steps.append(candidate)
-    return steps
 
-class HikingPath:
-    def __init__(self, start, path=[]):
-        self.currentStep = start
-        self.path = path
-
+def longest_path(start, finish, grid, visited=set()):
+    if start == finish:
+        return 0
     
+    result = -sys.maxsize
 
-def allPathsDfs(start, finish, lines):
-    q = [HikingPath(start, [])]
+    # Add the current node to visited for the duration of this recursion, but
+    # let other paths see it later.
+    visited.add(start)
+    for n in grid.neighbors(start, neighbor_dirs(grid[start])):
+        if grid[n] != '#' and n not in visited :
+            result = max(result, longest_path(n, finish, grid, visited) + 1)
+    visited.remove(start)
 
-    paths = []
-    while len(q) > 0:
-        p = q[0]
-        del q[0]
+    return result
 
-        if p.currentStep == finish:
-            print(f'Found path of length {len(p.path)}')
-            paths.append(p.path)
-        else:
-            nextSteps = getNextStepsPart2(p.currentStep, set(p.path), lines)
-            # Add this start node to a copy of visited, so it can be
-            # visited on other traversals that may cross this one
-            for step in nextSteps:
-                q.append(HikingPath(step, p.path + [step]))
+def follow(p: Point, n: Point, cost: int, grid):
+    # follow a path with no branches, eventually returning a tuple of (last point, step count)
+    neighbors = [d for d in grid.neighbors(n) if grid[d] != '#' and d != p]
+    if len(neighbors) == 1:
+        return follow(n, neighbors[0], cost + 1, grid)
+    else:
+        return (n, cost)
 
-    return paths
+def grid_to_graph(grid: Grid):
+    # reduce the maze grid to a graph where the vertices are points where the
+    # path can diverge, and the cost of each node is the number of nodes between
+    # it and the previous vertex.
+    graph = defaultdict(set) # Node -> neighbors
+    costs = defaultdict(int) # Node -> cost
+
+    for p in grid:
+        if grid[p] == '#': continue # ignore walls
+        neighbors = [d for d in grid.neighbors(p) if grid[d] != '#']
+        if len(neighbors) == 2: continue # only use points where the path can branch
+        for n in neighbors:
+            (last, cost) = follow(p, n, 1, grid)
+            graph[p].add(last)
+            costs[(p, last)] = cost
+
+    return graph,costs
+
+def longest_path_graph(start, finish, graph, costs, visited = set()) -> int:
+    edges = graph[start]
+    if finish in edges:
+        return costs[(start, finish)]
+    
+    result = 0
+    for e in edges:
+        if e not in visited:
+            # Add the current node to visited for the duration of this recursion, but
+            # let other paths see it later.
+            visited.add(start)
+            result = max(result, longest_path_graph(e, finish, graph, costs, visited) + costs[(start, e)])
+            visited.remove(start)
+
+    return result
 
 
-def printPath(path, lines):
-    for y in range(len(lines)):
-        line = []
-        for x in range(len(lines[0])):
-            if (x, y) in path:
-                line.append('O')
-            else:
-                line.append(lines[y][x])
-        print(''.join(line))
-
-def part1(lines):
+def part1():
+    sys.setrecursionlimit(10_000)
     start = (lines[0].index('.'), 0)
     finish = (lines[len(lines) - 1].index('.'), len(lines) - 1)
+    grid = Grid(lines)
 
-    # printPath([], lines)
+    result = longest_path(start, finish, grid)
 
-    allPaths = allPathsDfs(start, finish, lines)
-    print(f'Found {len(allPaths)} paths')
+    # 1998
+    print(f'Logest: {result}')
+    
+def part2():
+    start = (lines[0].index('.'), 0)
+    finish = (lines[len(lines) - 1].index('.'), len(lines) - 1)
+    grid = Grid(lines)
 
-    longestPath = []
-    for p in allPaths:
-        print(f'path: {len(p)}')
-        if len(p) > len(longestPath):
-            longestPath = p
+    graph, costs = grid_to_graph(grid)
 
-    # printPath(longestPath, lines)
-    print(f'LongestPath: {len(longestPath)}')
+    result = longest_path_graph(start, finish, graph, costs)
 
-part1(lines)
+    # 6434
+    print(f'Logest: {result}')
+
+runIt(part1, part2)
