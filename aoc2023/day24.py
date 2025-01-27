@@ -1,5 +1,8 @@
 from collections import namedtuple
 from itertools import combinations, count
+import operator
+
+import numpy
 from aoc_utils import runIt, split_ints, PuzzleInput
 
 from math import ceil, floor
@@ -95,6 +98,113 @@ def part1():
     print(f'{c} intersections')
     
 def part2():
-    print('nyi')
+    hailstones = [Hailstone(line) for line in lines]
+
+    """
+    Each hailstone line is x+t*dx, y+t*dy, z+t*dz
+    for the rock X+ t*DX, etc
+    intersection x + t*dx = X + t*DX
+
+    Note - re-deriving this using https://github.com/jmd-dk/advent-of-code/blob/main/2023/solution/24/solve.py
+    
+    use h0 as "origin", our rock hits at t=1
+    P + t*V = p + t*v
+    P[0] + t*V[0] = p[0] + t*v[0]
+    P[1] + t*V[1] = p[1] + t*v[1]
+    P[2] + t*v[2] = p[2] + t*v[2] <-- ignore for now
+
+    Solve for t:
+    t*V[0] - t*v[0] = p[0] - P[0]
+    t * (V[0] - v[0]) = p[0] - P[0]
+    t = (p[0] - P[0]) / (V[0] - v[0])
+
+    Same for y, then make equal (because t=t) gives
+    t = (p[1] - P[1]) / (V[1] - v[1])
+
+    (p[0] - P[0]) / (V[0] - v[0]) = (p[1] - P[1]) / (V[1] - v[1])
+    p[0] - P[0] = ((p[1] - P[1]) / (V[1] - v[1])) *  (V[0] - v[0])
+    (p[0] - P[0]) * (V[1] - v[1]) = (p[1] - P[1]) * (V[0] - v[0])    
+    ((V[0] - v[0]) * p[1]) - ((V[0] - v[0]) * P[1]) = ((V[1] - v[1]) * p[0]) - ((V[1] - v[1]) * P[0])
+    V[0]p[1] - v[0]p[1] - V[0]P[1] + v[0]P[1] = V[1]p[0] - v[1]p[0] - V[1]P[0] + v[1]P[0]
+    -V[0]P[1] + V[1]P[0] = V[1]p[0] - v[1]p[0] + v[1]P[0] - V[0]p[1] + v[0]p[1] - v[0]P[1]
+    V[0]P[1] - V[1]P[0] = -V[1]p[0] + v[1]p[0] - v[1]P[0] + V[0]p[1] - v[0]p[1] + v[0]P[1]
+
+    Finally, gives an equation independent of the chosen hailstone:
+    V[0]P[1] - V[1]P[0] = p[0] * (v[1] - V[1]) + p[1] * (V[0] - v[0])  - P[0]v[1] + P[1]v[0]
+
+    Now make equal for two hailstones i,j:
+    p_i[0] * (v_i[1] - V[1]) + p_i[1] * (V[0] - v_i[0]) - P[0]v_i[1] + P[1]v_i[0] = 
+    p_j[0] * (v_j[1] - V[1]) + p_j[1] * (V[0] - v_j[0]) - P[0]v_j[1] + P[1]v_j[0]
+
+    p_i[0] * v_i[1] - p_i[0] * V[1] + p_i[1] * V[0] - p_i[1] * v_i[0] - P[0]v_i[1] + P[1]v_i[0] =
+    p_j[0] * v_j[1] - p_j[0] * V[1] + p_j[1] * V[0] - p_j[1] * v_j[0] - P[0]v_j[1] + P[1]v_j[0]
+    
+    Move all knowns to the rhs:
+    -p_i[0] * V[1] + p_i[1] * V[0] - P[0]v_i[1] + P[1]v_i[0] + p_j[0] * V[1] - p_j[1] * V[0] + P[0]v_j[1] - P[1]v_j[0] =
+    -p_i[0] * v_i[1] + p_i[1] * v_i[0] + p_j[0] * v_j[1] - p_j[1] * v_j[0]
+
+    Simplify:
+    + P[0] * (v_j[1] - v_i[1])
+    - P[1] * (v_j[0] - v_i[0])
+    + V[1] * (p_j[0] - p_i[0])
+    - V[0] * (p_j[1] - p_i[1])
+    =
+    - p_i[0] * v_i[1]
+    + p_i[1] * v_i[0]
+    + p_j[0] * v_j[1]
+    - p_j[1] * v_j[0]
+
+    Then repeat with two other hailstones to get 0,2 and 1,2 and end up with six equations for six unknowns.
+    P[1] + t*V[1] = p[1] + t*v[1]
+    P[2] + t*v[2] = p[2] + t*v[2]
+    """
+    j = 0
+    rows = []
+    vrows = []
+    brows = []
+    for i in range(2):
+        j = i+ 1
+        hail_i = hailstones[i] 
+        hail_j = hailstones[j] 
+
+
+        # P[0] P[1] P[2] V[0] V[1] V[2] 
+        # Note this swaps i and j from the equations above
+        rows.append([(hail_i.dy - hail_j.dy), -(hail_i.dx - hail_j.dx), 0, -(hail_i.y - hail_j.y), (hail_i.x - hail_j.x), 0])
+        rows.append([-(hail_i.dz - hail_j.dz), 0, (hail_i.dx - hail_j.dx), (hail_i.z - hail_j.z), 0, -(hail_i.x - hail_j.x)])
+        rows.append([0, (hail_i.dz - hail_j.dz), -(hail_i.dy - hail_j.dy), 0, -(hail_i.z - hail_j.z), (hail_i.y - hail_j.y)])
+
+        # These are equivalent, manually derived from above or subtracting the cross-products
+        vrows.append(-(hail_j.x * hail_j.dy) + (hail_j.y * hail_j.dx) + (hail_i.x * hail_i.dy) -(hail_i.y * hail_i.dx))
+        vrows.append(-(hail_j.z * hail_j.dx) + (hail_j.x * hail_j.dz) + (hail_i.z * hail_i.dx) -(hail_i.x * hail_i.dz))
+        vrows.append(-(hail_j.y * hail_j.dz) + (hail_j.z * hail_j.dy) + (hail_i.y * hail_i.dz) -(hail_i.z * hail_i.dy))
+
+        brows += list(
+            map(
+                operator.sub,
+                numpy.cross([hail_i.x, hail_i.y, hail_i.z], [hail_i.dx, hail_i.dy, hail_i.dz]),
+                numpy.cross([hail_j.x, hail_j.y, hail_j.z], [hail_j.dx, hail_j.dy, hail_j.dz]),
+            )
+        )[::-1]
+
+        # a2b3 - a3b2, a3b1 - a1b3, a1b2 - a2b1
+        # [(hail_i.y * hail_i.dz) - (hail_i.z * hail_i.dy),
+        # (hail_i.z * hail_i.dx) - (hail_i.x * hail_i.dz), 
+        # (hail_i.x * hail_i.dy) - (hail_i.y * hail_i.dx)]
+        # [(hail_j.y * hail_j.dz) - (hail_j.z * hail_j.dy),
+        # (hail_j.z * hail_j.dx) - (hail_j.x * hail_j.dz), 
+        # (hail_j.x * hail_j.dy) - (hail_j.y * hail_j.dx)]
+        #
+        # (hail_i.y * hail_i.dz) - (hail_i.z * hail_i.dy) - (hail_j.y * hail_j.dz) + (hail_j.z * hail_j.dy)
+        # (hail_i.z * hail_i.dx) - (hail_i.x * hail_i.dz) - (hail_j.z * hail_j.dx) + (hail_j.x * hail_j.dz)
+        # (hail_i.x * hail_i.dy) - (hail_i.y * hail_i.dx) - (hail_j.x * hail_j.dy) + (hail_j.y * hail_j.dx)
+
+    print(brows)
+    print(vrows)
+    A = numpy.array(rows)
+    P = numpy.array(vrows)
+    r = numpy.linalg.solve(A, P)
+
+    print(f'Starting {r[:3]} sum is {r[0] + r[1] + r[2]}')
 
 runIt(part1, part2)
