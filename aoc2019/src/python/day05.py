@@ -19,6 +19,8 @@ def part1():
     print(outputs)
 
 def part2():
-    print('nyi')
+    ints = list(aoc_utils.splitInts(lines[0], ','))
+    outputs = intcode.run_intcode(ints, [5])
+    print(f'part2 {outputs}')
 
 aoc_utils.runIt(part1, part2)

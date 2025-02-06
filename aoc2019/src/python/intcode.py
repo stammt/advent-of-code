@@ -5,6 +5,10 @@ OP_ADD = 1
 OP_MUL = 2
 OP_INPUT = 3
 OP_OUTPUT = 4
+OP_JUMP_IF_TRUE = 5
+OP_JUMP_IF_FALSE = 6
+OP_LT = 7
+OP_EQ = 8
 
 MODE_POSITION = 0
 MODE_IMMEDIATE = 1
@@ -38,6 +42,30 @@ def run_intcode(ints: list[int], inputs: list[int]) -> list[int]:
             op = param_value(0, i, modes, ints)
             outputs.append(op)
             i += 2
+        elif opcode == OP_JUMP_IF_TRUE:
+            p1 = param_value(0, i, modes, ints)
+            p2 = param_value(1, i, modes, ints)
+            if p1 != 0:
+                i = p2
+            else:
+                i += 3
+        elif opcode == OP_JUMP_IF_FALSE:
+            p1 = param_value(0, i, modes, ints)
+            p2 = param_value(1, i, modes, ints)
+            if p1 == 0:
+                i = p2
+            else:
+                i += 3
+        elif opcode == OP_LT:
+            p1 = param_value(0, i, modes, ints)
+            p2 = param_value(1, i, modes, ints)
+            ints[ints[i+3]] = 1 if p1 < p2 else 0
+            i += 4
+        elif opcode == OP_EQ:
+            p1 = param_value(0, i, modes, ints)
+            p2 = param_value(1, i, modes, ints)
+            ints[ints[i+3]] = 1 if p1 == p2 else 0
+            i += 4
         elif opcode in {OP_ADD, OP_MUL}:
             op1 = param_value(0, i, modes, ints)
             op2 = param_value(1, i, modes, ints)
