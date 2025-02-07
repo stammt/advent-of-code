@@ -21,12 +21,37 @@ def part1():
     for phases in itertools.permutations(phase_values):
         input = 0
         for i in phases:        
-            output = intcode.run_intcode(list(ints), [i, input])
+            output, state, pos = intcode.run_intcode(list(ints), [i, input])
             input = output[0]
             best = max(input, best)
     print(best)
 
 def part2():
-    print('nyi')
+    ints = list(aoc_utils.splitInts(lines[0], ','))
+    # ints = [3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5]
+    phase_values = [5, 6, 7, 8, 9]
+    best = 0
+    
+    for phases in itertools.permutations(phase_values):
+        amps = [intcode.Intcode(list(ints)),
+                intcode.Intcode(list(ints)),
+                intcode.Intcode(list(ints)),
+                intcode.Intcode(list(ints)),
+                intcode.Intcode(list(ints))]
+        initial_run = True
+        i = 0
+        while True:
+            amp = amps[i]
+            if amp.state == intcode.STATE_HALTED:
+                break
+            feedback = 0 if len(amps[i-1].output) == 0 else amps[i-1].output[0]
+            input = [phases[i], feedback] if initial_run else [feedback]
+            amp.run_with_input(input)
+            i = (i + 1) % len(phases)
+            if i == 0:
+                initial_run = False
+        best = max(best, amps[-1].output[0])
+
+    print(best)
 
 aoc_utils.runIt(part1, part2)
