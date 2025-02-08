@@ -25,6 +25,7 @@ class Intcode:
         self.output = []
         self.state = STATE_NOT_STARTED
 
+    # Runs the program until it either halts or consumes all of the input and is waiting for more.
     def run_with_input(self, input: list[int]):
         self.output, self.state, self.i = run_intcode(self.memory, input, self.i)
 
