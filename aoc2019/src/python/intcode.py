@@ -9,9 +9,11 @@ OP_JUMP_IF_TRUE = 5
 OP_JUMP_IF_FALSE = 6
 OP_LT = 7
 OP_EQ = 8
+OP_ADJUST_RELATIVE_BASE = 9
 
 MODE_POSITION = 0
 MODE_IMMEDIATE = 1
+MODE_RELATIVE = 2
 
 STATE_NOT_STARTED = -1
 STATE_RUNNING = 0
@@ -22,12 +24,13 @@ class Intcode:
     def __init__(self, memory):
         self.memory = memory
         self.i = 0
+        self.relative_base = 0
         self.output = []
         self.state = STATE_NOT_STARTED
 
     # Runs the program until it either halts or consumes all of the input and is waiting for more.
     def run_with_input(self, input: list[int]):
-        self.output, self.state, self.i = run_intcode(self.memory, input, self.i)
+        self.output, self.state, self.i, self.relative_base = run_intcode(self.memory, input, self.i, self.relative_base)
 
     
 
@@ -42,11 +45,23 @@ def parse_op(op: int) -> tuple[int, list[int]]:
         op //= 10
     return (opcode, modes)
 
-def param_value(pos: int, i: int, modes: list[int], ints: list[int]) -> int:
+def param_value(pos: int, i: int, relative_base: int, modes: list[int], ints: dict[int, int]) -> int:
     mode = 0 if len(modes) <= pos else modes[pos]
-    return ints[ints[i+pos+1]] if mode == MODE_POSITION else ints[i+pos+1]
+    if mode == MODE_POSITION:
+        return ints[ints[i+pos+1]]
+    elif mode == MODE_RELATIVE:
+        return ints[ints[i+pos+1] + relative_base]
+    else:
+        return ints[i+pos+1]
+    
+def write_value(value: int, pos: int, i: int, relative_base: int, modes: list[int], ints: dict[int, int]):
+    mode = 0 if len(modes) <= pos else modes[pos]
+    if mode == MODE_POSITION:
+        ints[ints[i+pos+1]] = value
+    elif mode == MODE_RELATIVE:
+        ints[ints[i+pos+1] + relative_base] = value
 
-def run_intcode(ints: list[int], inputs: list[int], i = 0) -> tuple[list[int], int, int]:
+def run_intcode(ints: dict[int,int], inputs: list[int], i = 0, relative_base = 0) -> tuple[list[int], int, int, int]:
     outputs = []
     state = STATE_RUNNING
     while True:
@@ -58,42 +73,47 @@ def run_intcode(ints: list[int], inputs: list[int], i = 0) -> tuple[list[int], i
             if len(inputs) == 0:
                 state = STATE_WAITING_INPUT
                 break
-            ints[ints[i+1]] = inputs.pop(0)
+            write_value(inputs.pop(0), 0, i, relative_base, modes, ints)
             i += 2
         elif opcode == OP_OUTPUT:
-            op = param_value(0, i, modes, ints)
+            op = param_value(0, i, relative_base, modes, ints)
             outputs.append(op)
             i += 2
         elif opcode == OP_JUMP_IF_TRUE:
-            p1 = param_value(0, i, modes, ints)
-            p2 = param_value(1, i, modes, ints)
+            p1 = param_value(0, i, relative_base, modes, ints)
+            p2 = param_value(1, i, relative_base, modes, ints)
             if p1 != 0:
                 i = p2
             else:
                 i += 3
         elif opcode == OP_JUMP_IF_FALSE:
-            p1 = param_value(0, i, modes, ints)
-            p2 = param_value(1, i, modes, ints)
+            p1 = param_value(0, i, relative_base, modes, ints)
+            p2 = param_value(1, i, relative_base, modes, ints)
             if p1 == 0:
                 i = p2
             else:
                 i += 3
         elif opcode == OP_LT:
-            p1 = param_value(0, i, modes, ints)
-            p2 = param_value(1, i, modes, ints)
-            ints[ints[i+3]] = 1 if p1 < p2 else 0
+            p1 = param_value(0, i, relative_base, modes, ints)
+            p2 = param_value(1, i, relative_base, modes, ints)
+            v = 1 if p1 < p2 else 0
+            write_value(v, 2, i, relative_base, modes, ints)
             i += 4
         elif opcode == OP_EQ:
-            p1 = param_value(0, i, modes, ints)
-            p2 = param_value(1, i, modes, ints)
-            ints[ints[i+3]] = 1 if p1 == p2 else 0
+            p1 = param_value(0, i, relative_base, modes, ints)
+            p2 = param_value(1, i, relative_base, modes, ints)
+            v = 1 if p1 == p2 else 0
+            write_value(v, 2, i, relative_base, modes, ints)
             i += 4
+        elif opcode == OP_ADJUST_RELATIVE_BASE:
+            relative_base += param_value(0, i, relative_base, modes, ints)
+            i += 2
         elif opcode in {OP_ADD, OP_MUL}:
-            op1 = param_value(0, i, modes, ints)
-            op2 = param_value(1, i, modes, ints)
-            val = op1 + op2 if opcode == OP_ADD else op1 * op2
-            ints[ints[i+3]] = val
+            op1 = param_value(0, i, relative_base, modes, ints)
+            op2 = param_value(1, i, relative_base, modes, ints)
+            v = op1 + op2 if opcode == OP_ADD else op1 * op2
+            write_value(v, 2, i, relative_base, modes, ints)
             i += 4
-    return (outputs, state, i)
+    return (outputs, state, i, relative_base)
 
 
