@@ -1,3 +1,4 @@
+from collections import defaultdict
 from aoc_utils import splitInts
 
 OP_HALT = 99
@@ -22,7 +23,10 @@ STATE_WAITING_INPUT = 2
 
 class Intcode:
     def __init__(self, memory):
-        self.memory = memory
+        if isinstance(memory, str):
+            self.memory = parse_program(memory)
+        else:
+            self.memory = memory
         self.i = 0
         self.relative_base = 0
         self.output = []
@@ -32,7 +36,12 @@ class Intcode:
     def run_with_input(self, input: list[int]):
         self.output, self.state, self.i, self.relative_base = run_intcode(self.memory, input, self.i, self.relative_base)
 
-    
+def parse_program(line: str) -> dict[int,int]:
+    memory = defaultdict(int)
+    ints = list(splitInts(line, ','))
+    for i in range(len(ints)):
+        memory[i] = ints[i]
+    return memory
 
 # Parse an op into a tuple of (opcode, list of modes) where mode 0 is position, 1 is immediate.
 # If there are fewer modes than parameters for this op, they are assumed to be 0.
