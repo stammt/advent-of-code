@@ -10,3 +10,7 @@ Day 10 (Building an asteroid monitoring/destroying station):
 Day 11 (Painting a space registration on our ship to avoid space jailtime from the space cops):
 
 - This was cool, writing a driver program to call the Intcode machine with inputs and outputs. Pretty straightforward, and luckily my Intcode computer is fully functional!
+
+Day 12 (That's no moon!)
+
+- Part 1 was pretty straightforward, I spent some time collapsing nested for-loops into python list generators just for fun...
