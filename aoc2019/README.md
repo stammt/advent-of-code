@@ -14,3 +14,4 @@ Day 11 (Painting a space registration on our ship to avoid space jailtime from t
 Day 12 (That's no moon!)
 
 - Part 1 was pretty straightforward, I spent some time collapsing nested for-loops into python list generators just for fun...
+- Part 2 took a while. I had a feeling it was about finding the length of the cycles where positions repeated, and then finding the LCM, but I had trouble getting it exactly right. My first attempt worked for the small sample but not the larger one; then I eventually realized that (a) I had to compare the x,y,z, separately and not compare the moons separately, and (b) I had to start with step 1, not 0! I had been starting with 0 and then adding 1 at the end, but this doesn't give the right cycle step counts.
