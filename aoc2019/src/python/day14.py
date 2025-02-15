@@ -65,9 +65,9 @@ testInput5 = r"""171 ORE => 8 CNZTR
 121 ORE => 7 VRPVC
 7 XCVML => 6 RJRHP
 5 BHXH, 4 VRPVC => 5 LTCX"""
-input = PuzzleInput('input/day14.txt', testInput1)
+input = PuzzleInput('input/day14.txt', testInput5)
 
-lines = input.getInputLines(test=False)
+lines = input.getInputLines(test=True)
 
 class Reaction:
     def __init__(self, line):
@@ -97,12 +97,12 @@ class Reaction:
 def solve(target_type: str, target_count: int, resources: dict[str, int], reactions: list[Reaction]) -> int:
     target_reaction = [r for r in reactions if r.output_type == target_type][0]
 
-    print(f'Looking for {target_count} {target_type} already have {resources[target_type]}')
+    # print(f'Looking for {target_count} {target_type} already have {resources[target_type]}')
 
     # If we have enough already, use it
     if resources[target_type] >= target_count:
         resources[target_type] -= target_count
-        print(f'Already had enough, now have {resources[target_type]} left')
+        # print(f'Already had enough, now have {resources[target_type]} left')
         return 0
     
     # If this can be made with ore, make it
@@ -116,32 +116,80 @@ def solve(target_type: str, target_count: int, resources: dict[str, int], reacti
         resources[target_type] += (target_reaction.output_count * times) - target_count
         ore = (target_reaction.inputs['ORE'] * times)
 
-        print(f'Spent {ore} ({target_reaction.inputs['ORE']} x {times}) on {target_reaction.output_count * times} {target_type} have {resources[target_type]} remaining')
+        # print(f'Spent {ore} ({target_reaction.inputs['ORE']} x {times}) on {target_reaction.output_count * times} {target_type} have {resources[target_type]} remaining')
         return ore
 
-    # Sum the cost of making the components
+    # Sum the cost of making the components - figure out how many reactions we need based on what we need and how much
+    # we already have of the target type, then the results of the reactions minus what we need to the leftover resources
     else:
         cost = 0
         reaction_count = math.ceil((target_count - resources[target_type]) / target_reaction.output_count)
-        print(f'Need to run {target_reaction} {reaction_count} times to get {reaction_count * target_reaction.output_count}')
+        # print(f'Need to run {target_reaction} {reaction_count} times to get {reaction_count * target_reaction.output_count}')
         for k, v in target_reaction.inputs.items():
             cost += solve(k, v * reaction_count, resources, reactions)
         resources[target_type] += (reaction_count * target_reaction.output_count) - target_count
-        print(f'Done building {target_count} {target_type} for {cost} still have {resources[target_type]}\n')
+        # print(f'Done building {target_count} {target_type} for {cost} still have {resources[target_type]}\n')
 
         return cost
 
 def part1():
     reactions = [Reaction(line) for line in lines]
-    # fi = [r for r in reactions if r.output_type == 'FUEL'][0]
-
     ore = solve('FUEL', 1, defaultdict(int), reactions)
-    # 432163 too high
-    # 354122 too high
     print(ore)
 
 def part2():
-    print(1000000000000 / 13312)
-    print('nyi')
+    reactions = [Reaction(line) for line in lines]
 
+    # Keep spending ore to produce fuel and see when we have enough to produce a fuel unit without spending
+    # any ore.
+    # cost = solve('FUEL', 1, resources, reactions)
+    # leftovers = defaultdict(int)
+
+    # cost = 0
+    # for i in range(10):
+    #     resources = defaultdict(int)
+    #     cost += solve('FUEL', 1, resources, reactions)
+
+    #     for k,v in resources.items():
+    #         leftovers[k] += resources[k]
+
+    # print(f'leftovers {leftovers}')
+    # c = solve('FUEL', 1, leftovers, reactions)
+    # cost += c
+    # print(f'1 cost {cost}, last was {c}')
+
+    # resources = defaultdict(int)
+    # cost = 0
+    # for i in range(10):
+    #     cost += solve('FUEL', 1, resources, reactions)
+    # c = solve('FUEL', 1, resources, reactions)
+    # cost += c
+    # print(f'2 cost {cost} last was {c}')
+
+    ore = 1000000000000
+    fuel = 0
+    resources = defaultdict(int)
+    total_cost = 0
+    cost_history = []
+    cost_meta_history = []
+    while ore > 0:
+        cost = solve('FUEL', 1, resources, reactions)
+        if cost == 2210736:
+            print(f'Back to original cost after {fuel}')
+        if cost > ore:
+            break
+        fuel += 1
+        has_leftovers = [k for k in resources.keys() if resources[k] > 0]
+        ore -= cost
+        total_cost += cost
+        if cost in cost_history:
+            print(f'Already saw cost {cost} in {cost_history}')
+            cost_meta_history.append(cost_history)
+            cost_history = []
+        cost_history.append(cost)
+        if len(has_leftovers) == 0:
+            print(f'no leftovers after {fuel} with cost {total_cost}')
+            break
+
+    # print(fuel)
 runIt(part1, part2)
