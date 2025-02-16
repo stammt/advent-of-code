@@ -24,3 +24,8 @@ Day 14 (Mining ore for fuel)
 
 - I feel like Part 1 should have been simple but I got tripped up on managing "leftover" resources. Several times my solution worked for some samples, but not others. Eventually I got it right though...
 - Part 2 took some experimentation. For the sample I could just run the mining code in a loop to get to 1 trillion ore, but that didn't work for the real input. I had a few false starts around looking for a loop in the processing (e.g. passing the leftover resources over and over to see if I got back to the initial state). After leaving it alone overnight I realized that instead of trying to make 1 FUEL and vary the amount of ore, I should keep the amount of ore steady and vary the amount of FUEL to make in a single call. Doing that in a binary search for the max amount of fuel I could request got the right answer!
+
+Day 15 (Oxygen repair)
+
+- Another intcode problem! For part 1 I wrote a simple dfs to discover the grid by testing each direction and then backtracking to the known start location when I hit a dead end. This worked well, and then I was able to use A\* search to find the shortest path to the oxygen processor.
+- Part 2 was also pretty straightforward, just do a breadth-first traversal to see how man loops it would take to fill the empty part of the grid with oxygen. The only tricky bit was to track the progress per "generation" rather than each individual expansion, since it's expanding in all directions every minute.
