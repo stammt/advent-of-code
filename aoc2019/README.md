@@ -15,3 +15,12 @@ Day 12 (That's no moon!)
 
 - Part 1 was pretty straightforward, I spent some time collapsing nested for-loops into python list generators just for fun...
 - Part 2 took a while. I had a feeling it was about finding the length of the cycles where positions repeated, and then finding the LCM, but I had trouble getting it exactly right. My first attempt worked for the small sample but not the larger one; then I eventually realized that (a) I had to compare the x,y,z, separately and not compare the moons separately, and (b) I had to start with step 1, not 0! I had been starting with 0 and then adding 1 at the end, but this doesn't give the right cycle step counts.
+
+Day 13 (Pong)
+
+- This one was awesome, another intcode arcade game! I think Part 1 was just to verify the machine. For Part 2 I did some experimentation to see how the ball moved, then realized the driver code just needed to be a simple reaction to "chase" the ball as it moved - go right if it's moving right, and left if it's moving left. After getting the answer I did some simple ansi drawing code to create an ascii animation of the game :)
+
+Day 14 (Mining ore for fuel)
+
+- I feel like Part 1 should have been simple but I got tripped up on managing "leftover" resources. Several times my solution worked for some samples, but not others. Eventually I got it right though...
+- Part 2 took some experimentation. For the sample I could just run the mining code in a loop to get to 1 trillion ore, but that didn't work for the real input. I had a few false starts around looking for a loop in the processing (e.g. passing the leftover resources over and over to see if I got back to the initial state). After leaving it alone overnight I realized that instead of trying to make 1 FUEL and vary the amount of ore, I should keep the amount of ore steady and vary the amount of FUEL to make in a single call. Doing that in a binary search for the max amount of fuel I could request got the right answer!

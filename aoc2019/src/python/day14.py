@@ -67,7 +67,7 @@ testInput5 = r"""171 ORE => 8 CNZTR
 5 BHXH, 4 VRPVC => 5 LTCX"""
 input = PuzzleInput('input/day14.txt', testInput5)
 
-lines = input.getInputLines(test=True)
+lines = input.getInputLines(test=False)
 
 class Reaction:
     def __init__(self, line):
@@ -140,56 +140,26 @@ def part1():
 def part2():
     reactions = [Reaction(line) for line in lines]
 
-    # Keep spending ore to produce fuel and see when we have enough to produce a fuel unit without spending
-    # any ore.
-    # cost = solve('FUEL', 1, resources, reactions)
-    # leftovers = defaultdict(int)
-
-    # cost = 0
-    # for i in range(10):
-    #     resources = defaultdict(int)
-    #     cost += solve('FUEL', 1, resources, reactions)
-
-    #     for k,v in resources.items():
-    #         leftovers[k] += resources[k]
-
-    # print(f'leftovers {leftovers}')
-    # c = solve('FUEL', 1, leftovers, reactions)
-    # cost += c
-    # print(f'1 cost {cost}, last was {c}')
-
-    # resources = defaultdict(int)
-    # cost = 0
-    # for i in range(10):
-    #     cost += solve('FUEL', 1, resources, reactions)
-    # c = solve('FUEL', 1, resources, reactions)
-    # cost += c
-    # print(f'2 cost {cost} last was {c}')
-
-    ore = 1000000000000
-    fuel = 0
-    resources = defaultdict(int)
-    total_cost = 0
-    cost_history = []
-    cost_meta_history = []
-    while ore > 0:
-        cost = solve('FUEL', 1, resources, reactions)
-        if cost == 2210736:
-            print(f'Back to original cost after {fuel}')
-        if cost > ore:
+    # do a binary search to find the largest fuel count we can make with this much ore
+    ore_count =  1000000000000
+    max_fuel_count = 1000000000000 # arbitrary large number that's too big
+    min_fuel_count = 0
+    best = 0
+    while True:
+        fuel_count = min_fuel_count + ((max_fuel_count - min_fuel_count) // 2)
+        cost = solve('FUEL', fuel_count, defaultdict(int), reactions)
+        print(f'{cost} for {fuel_count}: {cost < ore_count}')
+        if cost < ore_count:
+            best = max(best, fuel_count)
+            min_fuel_count = fuel_count
+        elif cost == ore_count:
+            best = max(best, fuel_count)
             break
-        fuel += 1
-        has_leftovers = [k for k in resources.keys() if resources[k] > 0]
-        ore -= cost
-        total_cost += cost
-        if cost in cost_history:
-            print(f'Already saw cost {cost} in {cost_history}')
-            cost_meta_history.append(cost_history)
-            cost_history = []
-        cost_history.append(cost)
-        if len(has_leftovers) == 0:
-            print(f'no leftovers after {fuel} with cost {total_cost}')
+        else:
+            max_fuel_count = fuel_count - 1
+
+        if max_fuel_count - min_fuel_count <= 1:
             break
 
-    # print(fuel)
+    print(best)
 runIt(part1, part2)
