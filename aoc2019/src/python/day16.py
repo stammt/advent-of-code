@@ -33,6 +33,7 @@ def apply_pattern(pattern: list[int], input_digits: list[int]):
 
 def part1():
     input_digits = list(map(int, lines[0]))
+    print(f'Input len {len(input_digits)}')
     for i in range(100):
         output_digits = []
 
