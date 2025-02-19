@@ -96,6 +96,24 @@ def turn(dir:Point, turn_direction:str) -> Point:
     (x, y) = dir
     return (y, -x) if turn_direction[0] in ('L', 'l') else (-y, x)
 
+def get_turn(from_facing: Point, to_facing: Point):
+    if from_facing == North:
+        return 'R' if to_facing == East else 'L' if to_facing == West else None
+    elif from_facing == South:
+        return 'R' if to_facing == West else 'L' if to_facing == East else None
+    elif from_facing == East:
+        return 'R' if to_facing == South else 'L' if to_facing == North else None
+    elif from_facing == West:
+        return 'R' if to_facing == North else 'L' if to_facing == South else None
+    return None
+
+def left_or_right_turn(from_facing: Point) -> set[Point]:
+    if from_facing == North or from_facing == South:
+        return {East, West}
+    elif from_facing == East or from_facing == West:
+        return {North, South}
+    return set()
+
 def manhattan_distance(a: Point, b: Point) -> int:
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 

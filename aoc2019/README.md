@@ -29,3 +29,10 @@ Day 15 (Oxygen repair)
 
 - Another intcode problem! For part 1 I wrote a simple dfs to discover the grid by testing each direction and then backtracking to the known start location when I hit a dead end. This worked well, and then I was able to use A\* search to find the shortest path to the oxygen processor.
 - Part 2 was also pretty straightforward, just do a breadth-first traversal to see how man loops it would take to fill the empty part of the grid with oxygen. The only tricky bit was to track the progress per "generation" rather than each individual expansion, since it's expanding in all directions every minute.
+
+Day 16 ()
+
+Day 17 (Moving the cleaning robot)
+
+- Part 1 was simple, just parsing the intcode output into a grid and finding the path intersections
+- I "cheated" a little bit on part 2, I wrote quick function to simply follow all the turns of the path, and then output the commands that it would have used in the format "turn", "number of steps". After staring at the commands for a few minutes I figured out the three repeating subroutines and just hardcoded them in the program. It worked! I was sure it wouldn't just be the "simple" path so I was trying to figure out how to find all the different paths, but I guess I was over-thinking it. It wouldn't be too hard to write code to find the repeating subroutines, but... I don't have to :)
