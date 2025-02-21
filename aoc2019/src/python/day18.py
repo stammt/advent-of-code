@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import cache
 import sys
 from aoc_utils import PuzzleInput, add, runIt, Point, manhattan_distance, Grid, cardinal_directions
-from itertools import count
+from itertools import count, permutations
 from numpy import arctan, arctan2, pi
 import math
 
@@ -38,41 +38,7 @@ testInput4 = r"""########################
 ########################"""
 input = PuzzleInput('input/day18.txt', testInput4)
 
-lines = input.getInputLines(test=False)
-
-reachable_cache = dict()
-def get_reachable_keys(pos: Point, grid: Grid) -> dict[Point, int]:
-    global reachable_cache
-
-    keys = frozenset([p for p in grid if grid[p].islower()])
-    doors = frozenset([p for p in grid if grid[p].isupper()])
-    cache_key = (pos, keys, doors)
-    if cache_key in reachable_cache:
-        # print(f'Cache hit {cache_key}')
-        return reachable_cache[cache_key]
-    
-    options: dict[Point, int] = dict()
-    q = [(pos, 0)]
-    # print(f'checking for reachable keys from {pos} steps {steps} visited {visited}')
-    visited = set()
-    visited.add(pos)
-
-    while q:
-        state = q.pop(0)
-        for d in cardinal_directions:
-            new_pos = add(state[0], d)
-            # print(f'visiting {new_pos} {new_pos in visited} {new_pos in grid} {grid[new_pos]}')
-            if new_pos not in visited and new_pos in grid and grid[new_pos] != '#' and not grid[new_pos].isupper():
-                # print(f'again with {new_pos}')
-                visited.add(new_pos)
-                if grid[new_pos].islower() and (new_pos not in options or options[new_pos] > state[1]):
-                    options[new_pos] = state[1] + 1
-                else:
-                    q.append((new_pos, state[1] + 1))
-                    # options.update(get_reachable_keys(new_pos, grid, steps + 1, visited))
-
-    reachable_cache[cache_key] = options
-    return options
+lines = input.getInputLines(test=True)
 
 def add_distances_to_keys(k_pos, distances, blocking_doors, grid):
     key = grid[k_pos]
@@ -102,6 +68,10 @@ def add_distances_to_keys(k_pos, distances, blocking_doors, grid):
                     new_doors.add(grid[new_pos])
                 q.append((new_pos, state[1] + 1, new_doors))
 
+
+
+best_so_far = sys.maxsize
+
 def part1():
     original_grid = Grid(lines)
     start = original_grid.find('@')
@@ -125,50 +95,33 @@ def part1():
     # Add the distances from start to all of the keys
     add_distances_to_keys(start, key_distances, blocking_doors, original_grid)
 
-    start_state = (start, 0, set()) # position, steps, keys
-    q = [start_state]
+    def solve(path, remaining, steps):
+        global best_so_far
+        if steps > best_so_far:
+            return sys.maxsize
+        
+        if len(remaining) == 0:
+            best_so_far = min(best_so_far, steps)
+            return steps
+        
+        print(f'{path} : {remaining}')
+        last_key = '@' if len(path) == 0 else path[-1]
 
-    best = sys.maxsize
-    while q:
-        state = q.pop(0)
+        path_set = set(map(lambda k: k.capitalize(), path))
+        best = sys.maxsize 
+        for i in range(len(remaining)):
+            key = remaining[i]
+            doors = blocking_doors[last_key, key]
+            if path_set.issuperset(doors):
+                next_path = path + [key]
+                best = min(best, solve(next_path, remaining[0:i] + remaining[i+1:], steps + key_distances[last_key, key]))
 
-        pos = state[0]
-        steps = state[1]
-        keys = state[2]
-        if keys == all_key_names:
-            if steps < best:
-                print(f'Have all keys: {steps}')
-                best = min(best, steps)
-            continue
+        return best
 
-        if steps > best:
-            # print(f'Cutting off at {steps}')
-            continue
+    result = solve([], list(all_key_names), 0)
 
-        open_doors = set(map(lambda s: s.capitalize(), keys))
-        last_key = original_grid[pos]
-
-        next_states = []
-        for pair in key_distances.keys():
-            # not from this key
-            if pair[0] != last_key: continue
-            # to a key we already have
-            if pair[1] in keys: continue
-            # is still blocked by a door
-            if not open_doors.issuperset(blocking_doors[pair]): continue
-
-            # print(f'Queuing {pair} {key_distances[pair]}')
-            next_pos = original_grid.find(pair[1])
-            next_keys = set()
-            next_keys.update(keys)
-            next_keys.add(pair[1])
-            next_states.append((next_pos, steps + key_distances[pair], next_keys))
-        next_states.sort(key = lambda s: s[1], reverse=True)
-        for s in next_states:
-            q.insert(0, s)
-
-    # 7410 too high
-    print(best)
+    # 7010 too high
+    print(result)
 
 
 
