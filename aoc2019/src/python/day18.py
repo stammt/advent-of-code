@@ -1,7 +1,8 @@
 from collections import defaultdict
 from functools import cache
+from heapq import heappop, heappush
 import sys
-from aoc_utils import PuzzleInput, add, runIt, Point, manhattan_distance, Grid, cardinal_directions
+from aoc_utils import PuzzleInput, add, reconstruct_path, runIt, Point, manhattan_distance, Grid, cardinal_directions
 from itertools import count, permutations
 from numpy import arctan, arctan2, pi
 import math
@@ -36,142 +37,85 @@ testInput4 = r"""########################
 ###A#B#C################
 ###g#h#i################
 ########################"""
-input = PuzzleInput('input/day18.txt', testInput2)
+input = PuzzleInput('input/day18.txt', testInput4)
 
-lines = input.getInputLines(test=True)
+lines = input.getInputLines(test=False)
 
-def add_distances_to_keys(k_pos, distances, blocking_doors, grid):
-    key = grid[k_pos]
+ORD_A = ord('a')
 
-    visited = set()
-    visited.add(k_pos)
+def is_locked(door: str, have_keys: int) -> bool:
+    key_index = ord(door.lower()) - ORD_A
+    return have_keys & (1 << key_index) == 0
 
-    q = [(k_pos, 0, set())] # position, steps, doors encountered
-    while q:
-        state = q.pop()
-        for d in cardinal_directions:
-            new_pos = add(state[0], d)
-            if new_pos not in visited and new_pos in grid and grid[new_pos] != '#':
-                visited.add(new_pos)
-                if grid[new_pos].islower():
-                    other_key = grid[new_pos]
-                    # print(f'looking at {key} to {other_key}')
-                    if (key, other_key) not in distances or distances(key, other_key) > state[1] + 1:
-                        distances[(key, other_key)] = state[1] + 1
-                        blocking_doors[(key, other_key)] = state[2]
-                    else:
-                        print(f'already found distance for {key}, {other_key}')
+def add_key(key: str, have_keys: int) -> int:
+    key_index = ord(key) - ORD_A
+    return have_keys | (1 << key_index)
 
-                new_doors = state[2]
-                if grid[new_pos].isupper():
-                    new_doors = new_doors | {grid[new_pos]}
-                q.append((new_pos, state[1] + 1, new_doors))
+def count_missing_keys(have_keys: int, all_keys: int) -> int:
+    count = 0
+    while (have_keys):
+        count += (have_keys & 1)
+        have_keys >>= 1
+    return all_keys - count
 
+def solve_astar(start_pos: Point, grid: Grid):
+    all_keys_pos = {p for p in grid if grid[p].islower()}
+    all_keys = 0
+    key_count = len(all_keys_pos)
+    for i in range(len(all_keys_pos)):
+        all_keys |= (1 << i)
 
+    # nodes are (x, y, <bitmask of collected keys>)
+    start = (start_pos[0], start_pos[1], 0)
 
-best_so_far = sys.maxsize
+    openSet = []
+    heappush(openSet,(key_count, start))
+
+    cameFrom: dict[tuple[int, int, int], Point] = dict()
+
+    # For node n, gScore[n] is the currently known cost of the cheapest path from start to n.
+    gScore: dict[tuple[int, int, int], int]  = defaultdict(lambda: sys.maxsize)
+    gScore[start] = 0
+
+    # For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
+    # how cheap a path could be from start to finish if it goes through n.
+    fScore: dict[tuple[int, int, int], int] = defaultdict(lambda: sys.maxsize)
+    fScore[start] = key_count
+
+    while len(openSet) > 0:
+        (priority, current) = heappop(openSet) # min([n for n in openSet if n in fScore], key=lambda x: fScore[x])
+        have_keys = current[2]
+        if have_keys == all_keys:
+            return gScore[current]
+        
+        for n_pos in [add((current[0], current[1]), d) for d in cardinal_directions if add((current[0], current[1]), d) in grid and grid[add((current[0], current[1]), d)] != '#']:
+            if grid[n_pos].isupper() and is_locked(grid[n_pos], have_keys): continue
+            
+            n_keys = have_keys
+            if (grid[n_pos].islower()):
+                n_keys = add_key(grid[n_pos], have_keys)            
+            n = (n_pos[0], n_pos[1], n_keys)
+            tentative_gScore = gScore[current] + 1 # distance is always 1 here
+            if tentative_gScore < gScore[n]:
+                cameFrom[n] = current
+                gScore[n] = tentative_gScore
+                fScore[n] = tentative_gScore + count_missing_keys(n_keys, key_count) # 'h' function, use the number of keys still to retrieve
+                if n not in openSet:
+                    heappush(openSet, (fScore[n], n))
+
+    return []    
+
 
 def part1():
     original_grid = Grid(lines)
     start = original_grid.find('@')
-    all_keys = {p for p in original_grid if original_grid[p].islower()}
-    all_key_names = {original_grid[p] for p in all_keys}
+    result = solve_astar(start, original_grid)
 
-    # doors = {original_grid[p] for p in original_grid if original_grid[p].isupper()}
-
-    # build a dictionary of the steps between all pairs of keys
-    # key is a pair of keys, value is number of steps e.g. distances[(a,b)] = 7
-    key_distances = dict()
-    # dictionary of the doors between the keys 
-    blocking_doors = dict()
-    
-    for k in all_keys:
-        add_distances_to_keys(k, key_distances, blocking_doors, original_grid)
-
-    # Add the distances from start to all of the keys
-    add_distances_to_keys(start, key_distances, blocking_doors, original_grid)
-
-    print(key_distances)
-
-    @cache
-    def solve(pos: Point, have_keys: set[str]) -> int:        
-        if have_keys == all_key_names:
-            # best_so_far = min(best_so_far, steps)
-            return 0
-
-        open_doors = set(map(lambda k: k.capitalize(), have_keys))
-        key = original_grid[pos]
-        options = [k for k in all_key_names.difference(have_keys) if open_doors.issuperset(blocking_doors[key, k])]
-        best = sys.maxsize
-        for next_key in options:
-            next_pos = original_grid.find(next_key)
-            steps = key_distances[key, next_key] + solve(next_pos, frozenset(have_keys | {next_key}))
-            best = min(best, steps)
-
-        return best
-
-    result = solve(start, frozenset(set()))
-
-    # 6294 too high
+    # 6286
     print(result)
-
 
 
 def part2():
     print('nyi')
 
 runIt(part1, part2)
-
-
-
-
-def part1_permutations():
-    original_grid = Grid(lines)
-    start = original_grid.find('@')
-    all_keys = {p for p in original_grid if original_grid[p].islower()}
-    all_key_names = {original_grid[p] for p in all_keys}
-    print(all_key_names)
-
-    doors = {original_grid[p] for p in original_grid if original_grid[p].isupper()}
-    print(doors)
-    print(len(doors))
-
-    # build a dictionary of the steps between all pairs of keys
-    # key is a pair of keys, value is number of steps e.g. distances[(a,b)] = 7
-    key_distances = dict()
-    # dictionary of the doors between the keys 
-    blocking_doors = dict()
-
-    for k in all_keys:
-        add_distances_to_keys(k, key_distances, blocking_doors, original_grid)
-
-    # Add the distances from start to all of the keys
-    add_distances_to_keys(start, key_distances, blocking_doors, original_grid)
-
-    def solve(path, remaining, steps):
-        global best_so_far
-        if steps > best_so_far:
-            return sys.maxsize
-        
-        if len(remaining) == 0:
-            best_so_far = min(best_so_far, steps)
-            return steps
-        
-        print(f'{path} : {remaining}')
-        last_key = '@' if len(path) == 0 else path[-1]
-
-        path_set = set(map(lambda k: k.capitalize(), path))
-        best = sys.maxsize 
-        for i in range(len(remaining)):
-            key = remaining[i]
-            doors = blocking_doors[last_key, key]
-            if path_set.issuperset(doors):
-                next_path = path + [key]
-                best = min(best, solve(next_path, remaining[0:i] + remaining[i+1:], steps + key_distances[last_key, key]))
-
-        return best
-
-    result = solve([], list(all_key_names), 0)
-
-    # 7010 too high
-    print(result)
