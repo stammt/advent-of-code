@@ -36,7 +36,7 @@ testInput4 = r"""########################
 ###A#B#C################
 ###g#h#i################
 ########################"""
-input = PuzzleInput('input/day18.txt', testInput4)
+input = PuzzleInput('input/day18.txt', testInput2)
 
 lines = input.getInputLines(test=True)
 
@@ -55,17 +55,16 @@ def add_distances_to_keys(k_pos, distances, blocking_doors, grid):
                 visited.add(new_pos)
                 if grid[new_pos].islower():
                     other_key = grid[new_pos]
-                    print(f'looking at {key} to {other_key}')
+                    # print(f'looking at {key} to {other_key}')
                     if (key, other_key) not in distances or distances(key, other_key) > state[1] + 1:
                         distances[(key, other_key)] = state[1] + 1
                         blocking_doors[(key, other_key)] = state[2]
                     else:
                         print(f'already found distance for {key}, {other_key}')
 
-                new_doors = set()
-                new_doors.update(state[2])
+                new_doors = state[2]
                 if grid[new_pos].isupper():
-                    new_doors.add(grid[new_pos])
+                    new_doors = new_doors | {grid[new_pos]}
                 q.append((new_pos, state[1] + 1, new_doors))
 
 
@@ -73,6 +72,60 @@ def add_distances_to_keys(k_pos, distances, blocking_doors, grid):
 best_so_far = sys.maxsize
 
 def part1():
+    original_grid = Grid(lines)
+    start = original_grid.find('@')
+    all_keys = {p for p in original_grid if original_grid[p].islower()}
+    all_key_names = {original_grid[p] for p in all_keys}
+
+    # doors = {original_grid[p] for p in original_grid if original_grid[p].isupper()}
+
+    # build a dictionary of the steps between all pairs of keys
+    # key is a pair of keys, value is number of steps e.g. distances[(a,b)] = 7
+    key_distances = dict()
+    # dictionary of the doors between the keys 
+    blocking_doors = dict()
+    
+    for k in all_keys:
+        add_distances_to_keys(k, key_distances, blocking_doors, original_grid)
+
+    # Add the distances from start to all of the keys
+    add_distances_to_keys(start, key_distances, blocking_doors, original_grid)
+
+    print(key_distances)
+
+    @cache
+    def solve(pos: Point, have_keys: set[str]) -> int:        
+        if have_keys == all_key_names:
+            # best_so_far = min(best_so_far, steps)
+            return 0
+
+        open_doors = set(map(lambda k: k.capitalize(), have_keys))
+        key = original_grid[pos]
+        options = [k for k in all_key_names.difference(have_keys) if open_doors.issuperset(blocking_doors[key, k])]
+        best = sys.maxsize
+        for next_key in options:
+            next_pos = original_grid.find(next_key)
+            steps = key_distances[key, next_key] + solve(next_pos, frozenset(have_keys | {next_key}))
+            best = min(best, steps)
+
+        return best
+
+    result = solve(start, frozenset(set()))
+
+    # 6294 too high
+    print(result)
+
+
+
+def part2():
+    print('nyi')
+
+runIt(part1, part2)
+
+
+
+
+def part1_permutations():
     original_grid = Grid(lines)
     start = original_grid.find('@')
     all_keys = {p for p in original_grid if original_grid[p].islower()}
@@ -122,10 +175,3 @@ def part1():
 
     # 7010 too high
     print(result)
-
-
-
-def part2():
-    print('nyi')
-
-runIt(part1, part2)
