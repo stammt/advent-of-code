@@ -46,3 +46,7 @@ Day 19 (Tractor beam for santa)
 
 - Part 1: Simple use of Intcode again. Got a little mixed up because instead of taking input over and over, this machine needs to be reset between queries, but otherwise it was trivial.
 - Part 2: I outsmarted myself here, tried to find the slope of the lines defining the beam and then figure out where the box would fit. Unfortunately finding the slopes didn't really work because it was already quantized to the grid, so I ended up with a result that was close but not exact. Finally realized I could just "walk down" the top of the beam and check the bounding corners of the 100x100 box at each point to see where it would fit. I guess you could do a binary search here to make it even faster, but... _shrug_
+
+Day 20 (The recursive portal maze)
+
+- Part 1: After a ton of off-by-one errors in parsing, the actual solution was pretty easy! Just used a modified A\* to count portal exits as neighbors. I wasn't able to short-circuit when hitting the goal because I didn't have a legit h function to estimate the priority, but it still ran in less than 15ms.

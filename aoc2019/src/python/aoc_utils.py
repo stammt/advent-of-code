@@ -10,19 +10,19 @@ class PuzzleInput:
         self.testInput = testInput
 
     # Returns a list of input lines from the test input
-    def getTestInput(self) -> list[str]:
-        return list(map(lambda x: x.strip(), self.testInput.splitlines()))
+    def getTestInput(self, strip=True) -> list[str]:
+        return list(map(lambda x: x.strip() if strip else x, self.testInput.splitlines()))
 
     # Reads the input from a file and returns a list of input lines
-    def getFileInput(self) -> list[str]:
+    def getFileInput(self, strip=True) -> list[str]:
         f = open(self.fileName, 'r')
-        lines = list(map(lambda x: x.strip(), f.readlines()))
+        lines = list(map(lambda x: x.strip() if strip else x.rstrip('\n'), f.readlines()))
         if len(lines[len(lines) - 1]) == 0:
             lines = lines[0:-1]
         return lines
     
-    def getInputLines(self, test, mapper=None) -> list:
-        lines = self.getTestInput() if test == True else self.getFileInput()
+    def getInputLines(self, test, mapper=None, strip=True) -> list:
+        lines = self.getTestInput(strip) if test == True else self.getFileInput(strip)
         if (mapper):
             lines = [list(map(mapper, line)) for line in lines]
         return lines
