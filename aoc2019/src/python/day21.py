@@ -41,14 +41,12 @@ def part1():
         'NOT A J',
         'NOT B T',
         'OR T J',
-        'AND D T',
         'AND T J',
         'NOT A T',
-        'AND D T',
         'OR T J',
         'NOT C T',
-        'AND D T',
         'OR T J',
+        'AND D J',
         'WALK',
         ]
     computer.run_with_ascii_input(input)
@@ -58,6 +56,34 @@ def part1():
         print(''.join((map(chr, computer.output))))
 
 def part2():
-    print ('nyi')
+    computer = Intcode(lines[0])
+    # #####.##.######## a and (not b) and d or a and b and (not c) and d
+    # #####...######### (not a) and (not b) and (not c) and d OR a and (not b) and (not c) and (not d)
+    # #####..########## (not a) and (not b) and c and d OR a and (not b) and (not c) and d
+    # #####.########### (not a) and d OR 
+    # #####.#.#########
+    # #####.#.#...#.###
+    input = [
+        'NOT A J',
+        'NOT B T',
+        'OR T J',
+        'AND T J',
+
+        'NOT A T',
+        'OR T J',
+
+        'NOT C T',
+        'AND H T',
+        'OR T J',
+
+        'AND D J',
+
+        'RUN',
+        ]
+    computer.run_with_ascii_input(input)
+    if any([c not in range(0x110000) for c in computer.output]):
+        print(computer.output)
+    else:
+        print(''.join((map(chr, computer.output))))
 
 runIt(part1, part2)
