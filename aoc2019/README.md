@@ -50,3 +50,4 @@ Day 19 (Tractor beam for santa)
 Day 20 (The recursive portal maze)
 
 - Part 1: After a ton of off-by-one errors in parsing, the actual solution was pretty easy! Just used a modified A\* to count portal exits as neighbors. I wasn't able to short-circuit when hitting the goal because I didn't have a legit h function to estimate the priority, but it still ran in less than 15ms.
+- Part 2: Turns out I still had an off-by-one error in the parsing, which threw off my check for whether or not a portal was on the outer or inner side of the grid. Once I got that straightened out it wasn't too hard to adapt the A\* algorithm to traverse levels, although with the "inifinite" size I had to put in an arbitrary constraint on the number of levels to try. Also updated the heuristic to estimate distance to take into account the level to try to encourage going back to level 0. It worked!
