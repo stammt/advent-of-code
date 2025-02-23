@@ -36,6 +36,11 @@ class Intcode:
     def run_with_input(self, input: list[int]):
         self.output, self.state, self.i, self.relative_base = run_intcode(self.memory, input, self.i, self.relative_base)
 
+    # Takes a list of strings and transforms them into ascii values separated by line feeds, then runs with that input.
+    def run_with_ascii_input(self, input: list[str]):
+        input = ''.join(list(map(lambda x: x + '\n', input)))
+        self.run_with_input(list(map(ord, input)))
+
 def parse_program(line: str) -> dict[int,int]:
     memory = defaultdict(int)
     ints = list(splitInts(line, ','))
