@@ -56,3 +56,13 @@ Day 21 (Walk before you run)
 
 - Part 1: took some trial and error to figure out the logic, but eventually was able to handle enough cases that I got a result.
 - Part 2: this was really an extension of part 1, and I guess my logic from part 1 was pretty good because I only had to tweak it a little bit to get a result.
+
+Day 22 (Shuffle the deck)
+
+- Part 1: This was pretty straightforward again, just moving array elements around.
+- Part 2: Huh. I tried writing some code to track the position of a card as it "reversed" the shuffle, without actually allocating the full array. That worked but was still too slow with the number of shuffles required. I also tried actually shuffling the huge deck over and over to see if there was a cycle, but didn't find it. I'm sure there's some pattern I'm missing but need to come back to it...
+
+Day 23 (Boot up the network)
+
+- Part 1: Another simple Intcode exercise, feeding output of one instance into another.
+- Part 2: This was simpler than I expected, at first I mis-read the question and was reporting the first value sent TO the nat twice, but then I realized it was asking for the first value sent FROM the nat twice. Easy fix.

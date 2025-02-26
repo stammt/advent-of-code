@@ -36,7 +36,6 @@ def part1():
                 for x,y in input:
                     input_array.append(x)
                     input_array.append(y)
-                print(f'Computer {i} receiving input {input_array}')
                 computer.run_with_input(input_array)
             j = 0
             while j < len(computer.output):
@@ -45,11 +44,65 @@ def part1():
                     return
                 inputs[computers[i].output[j]].append((computers[i].output[j+1], computers[i].output[j+2]))
                 j += 3
-            
-
-            
+                        
 
 def part2():
-    print('nyi')
+    computers = [Intcode(lines[0]) for i in range(50)]
+    inputs = defaultdict(list)
+    nat = []
+    nat_sent = []
+
+    # boot them up and assign addresses
+    for i in range(50):
+        computers[i].run_with_input([i])
+        j = 0
+        while j < len(computers[i].output):
+            inputs[computers[i].output[j]].append((computers[i].output[j+1], computers[i].output[j+2]))
+            j += 3
+
+    # Track idle state, let it loop once with no inputs
+    idle = False
+    while True:
+        if len(inputs) == 0:
+            if not idle:
+                idle = True
+            elif len(nat) == 0:
+                print('No inputs but nat is empty!')
+                return
+            else:
+                print(f'Sending last nat packet to 0: {nat[len(nat) - 1]}')
+                inputs[0].append(nat[len(nat) - 1])
+                if len(nat_sent) == 2:
+                    nat_sent.pop(0)
+                nat_sent.append(nat[len(nat) - 1][1])
+                if len(nat_sent) == 2 and nat_sent[0] == nat_sent[1]:
+                    print(f'Sent value twice: {nat_sent}')
+                    return
+                idle = False
+        else:
+            print(f'Looping with {len(inputs)} inputs')
+            idle = False
+
+        for i in range(50):
+            computer = computers[i]
+            input = inputs[i]
+            del inputs[i]
+            if len(input) == 0:
+                computer.run_with_input([-1])
+            else:
+                input_array = []
+                for x,y in input:
+                    input_array.append(x)
+                    input_array.append(y)
+                computer.run_with_input(input_array)
+            j = 0
+            while j < len(computer.output):
+                if computers[i].output[j] == 255:
+                    if len(nat) == 2:
+                        nat.pop(0)
+                    nat.append((computers[i].output[j+1], computers[i].output[j+2]))
+                else:
+                    inputs[computers[i].output[j]].append((computers[i].output[j+1], computers[i].output[j+2]))
+                j += 3
 
 runIt(part1, part2)
