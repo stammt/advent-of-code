@@ -66,3 +66,8 @@ Day 23 (Boot up the network)
 
 - Part 1: Another simple Intcode exercise, feeding output of one instance into another.
 - Part 2: This was simpler than I expected, at first I mis-read the question and was reporting the first value sent TO the nat twice, but then I realized it was asking for the first value sent FROM the nat twice. Easy fix.
+
+Day 24 (Bug infestation)
+
+- Part 1: Pretty simple game of life style puzzle
+- Part 2: This got a little tedious to track the neighbors across levels of the map, but was straightforward. Rather than using the full grid and checking for a '#' I just kept track of a set of bug locations (x, y, z). I got mixed up and accidentally used the real input when testing which took some time to track down, but otherwise it just worked. There's probably a faster way to do this since it took 600ms, but it's not too bad.
