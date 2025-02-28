@@ -71,3 +71,7 @@ Day 24 (Bug infestation)
 
 - Part 1: Pretty simple game of life style puzzle
 - Part 2: This got a little tedious to track the neighbors across levels of the map, but was straightforward. Rather than using the full grid and checking for a '#' I just kept track of a set of bug locations (x, y, z). I got mixed up and accidentally used the real input when testing which took some time to track down, but otherwise it just worked. There's probably a faster way to do this since it took 600ms, but it's not too bad.
+
+Day 25 (Finally finding santa!)
+
+- Part 1: I ended up "playing" the zork-style game mostly manually by re-running it with a different set of commands until I found my way around and discovered what I could pick up. Then I just tried all combinations of items until I found the right combination to get through security :)

@@ -23,12 +23,19 @@ STATE_WAITING_INPUT = 2
 
 class Intcode:
     def __init__(self, memory):
-        if isinstance(memory, str):
-            self.memory = parse_program(memory)
+        if isinstance(memory, Intcode):
+            self.memory = defaultdict(int)
+            self.memory.update(memory.memory)
+            self.i = memory.i
+            self.relative_base = memory.relative_base
         else:
-            self.memory = memory
-        self.i = 0
-        self.relative_base = 0
+            if isinstance(memory, str):
+                self.memory = parse_program(memory)
+            else:
+                self.memory = defaultdict(int)
+                self.memory.update(memory)
+            self.i = 0
+            self.relative_base = 0
         self.output = []
         self.state = STATE_NOT_STARTED
 
@@ -38,8 +45,11 @@ class Intcode:
 
     # Takes a list of strings and transforms them into ascii values separated by line feeds, then runs with that input.
     def run_with_ascii_input(self, input: list[str]):
-        input = ''.join(list(map(lambda x: x + '\n', input)))
-        self.run_with_input(list(map(ord, input)))
+        input_array = ''.join(list(map(lambda x: x + '\n', input)))
+        self.run_with_input(list(map(ord, input_array)))
+
+    def output_as_str(self) -> str:
+        return ''.join((map(chr, self.output)))
 
 def parse_program(line: str) -> dict[int,int]:
     memory = defaultdict(int)
