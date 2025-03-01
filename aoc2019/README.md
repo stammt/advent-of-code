@@ -61,6 +61,7 @@ Day 22 (Shuffle the deck)
 
 - Part 1: This was pretty straightforward again, just moving array elements around.
 - Part 2: Huh. I tried writing some code to track the position of a card as it "reversed" the shuffle, without actually allocating the full array. That worked but was still too slow with the number of shuffles required. I also tried actually shuffling the huge deck over and over to see if there was a cycle, but didn't find it. I'm sure there's some pattern I'm missing but need to come back to it...
+- Part 2: after reading the reddit solutions thread I found some python that works, but I can't say I really understand it. It boils down the shuffle operations into a geometric series and ... does some magic.
 
 Day 23 (Boot up the network)
 

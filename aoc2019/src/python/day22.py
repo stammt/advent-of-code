@@ -36,7 +36,7 @@ deal with increment 3
 cut -1"""
 input = PuzzleInput('input/day22.txt', testInput3)
 
-lines = input.getInputLines(test=True)
+lines = input.getInputLines(test=False)
 
 def deal_with_increment(inc: int, deck: list[int]) -> list[int]:
     result = [0 for i in range(len(deck))]
@@ -89,8 +89,7 @@ def reverse_cut(pos: int, n: int, deck_size: int) -> int:
             return pos - abs(n)
 
 def part1():
-    deck = [i for i in range(10)]
-    print(deck)
+    deck = [i for i in range(10007)]
     for line in lines:
         if line.startswith('deal with increment'):
             inc = int(line[len('deal with increment '):])
@@ -100,40 +99,22 @@ def part1():
         elif line.startswith('cut'):
             n = int(line[len('cut '):])
             deck = cut(n, deck)
-        print(line)
-        print(deck)
-    # print(deck.index(2019))
+        # print(line)
+        # print(deck)
+    print(deck.index(2019))
+
+# Ok, I barely understand this, but it works :(
+# see: https://www.reddit.com/r/adventofcode/comments/ee0rqi/2019_day_22_solutions/
+def solve_part2(c, n, p, o=0, i=1):
+    inv = lambda x: pow(x, c-2, c)
+    for s in [s.split() for s in lines]:
+        if s[0] == 'cut':  o += i * int(s[-1])
+        if s[1] == 'with': i *= inv(int(s[-1]))
+        if s[1] == 'into': o -= i; i *= -1
+    o *= inv(1-i); i = pow(i, n, c)
+    return (p*i + (1-i)*o) % c
 
 def part2():
-    # deck = [i for i in range(119315717514047)]
-    shuffle_times = 101741582076661
-    #           113051296978736
-    deck_size = 119315717514047
-    lines.reverse()
-    pos = 2020
-    seen = set()
-
-    for i in range(shuffle_times):
-        for line in lines:
-            if line.startswith('deal with increment'):
-                inc = int(line[len('deal with increment '):])
-                pos = reverse_deal_with_increment(inc, pos, deck_size)
-            elif line.startswith('deal into new stack'):
-                pos = reverse_deal_into_new_stack(pos, deck_size)
-            elif line.startswith('cut'):
-                n = int(line[len('cut '):])
-                pos = reverse_cut(pos, n, deck_size)
-            # print(f'Pos {pos} after {line}')
-        if pos in seen:
-            print(f'repeated {pos} at {i}')
-            break
-        seen.add(pos)
-        # print(f'{i} : {pos}')
-        if pos == 2020:
-            print(f'Back to 2020 at {i}')
-            break
-
-    # 11378516720869 too low
-    print(pos)
+    print(solve_part2(119315717514047, 101741582076661, 2020))
 
 runIt(part1, part2)
