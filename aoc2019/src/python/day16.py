@@ -31,9 +31,20 @@ def apply_pattern(pattern: list[int], input_digits: list[int]):
 
     return abs(s) % 10
 
+def solve(digits: list[int]) -> list[int]:
+    t = 0
+    for i in range(len(digits)):
+        t += digits[i]
+
+    updated = []
+    for i in range(len(digits)):
+        updated.append(t % 10)
+        t -= digits[i]
+    return updated
+
+
 def part1():
     input_digits = list(map(int, lines[0]))
-    print(f'Input len {len(input_digits)}')
     for i in range(100):
         output_digits = []
 
@@ -45,6 +56,14 @@ def part1():
     print(''.join(map(str, input_digits[0:8])))
 
 def part2():
-    print('nyi')
+    input_digits = list(map(int, lines[0])) * 10000
+    
+    # trim the input to the offset
+    offset = int(lines[0][:7])
+    input = input_digits[offset:]
+    for i in range(100):
+        input = solve(input)
+
+    print(''.join(map(str, input[0:8])))
 
 runIt(part1, part2)

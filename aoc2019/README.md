@@ -30,7 +30,10 @@ Day 15 (Oxygen repair)
 - Another intcode problem! For part 1 I wrote a simple dfs to discover the grid by testing each direction and then backtracking to the known start location when I hit a dead end. This worked well, and then I was able to use A\* search to find the shortest path to the oxygen processor.
 - Part 2 was also pretty straightforward, just do a breadth-first traversal to see how man loops it would take to fill the empty part of the grid with oxygen. The only tricky bit was to track the progress per "generation" rather than each individual expansion, since it's expanding in all directions every minute.
 
-Day 16 ()
+Day 16 (FFT?)
+
+- Part 1 as usual was pretty straightforward
+- Part 2 I was completely stuck on and came back to it after everything else. I could see there was a pattern forming but couldn't quite make it work. After skimming some threads on the subreddit I got it working but I don't think I would have gotten it on my own...
 
 Day 17 (Moving the cleaning robot)
 
